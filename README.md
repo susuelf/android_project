@@ -22,6 +22,14 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
+## 📄 API Documentation (Swagger)
+
+This project uses **Swagger** to automatically generate interactive API documentation using the [`@nestjs/swagger`](https://github.com/nestjs/swagger) module.
+
+Once the server is running, the Swagger UI will be available at:
+
+http://localhost:3000/api
+
 ## Description
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
