@@ -2,10 +2,42 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TestModule } from './testSwagger/test.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AtGuard } from './auth/common/guards';
+import { Profile } from './profile/entities/profile.entity';
+import { User } from './user/entities/user.entity';
+import { ConfigModule } from '@nestjs/config';
+import { UserModule } from './user/user.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [TestModule],
+  imports: [
+    TestModule,
+    ConfigModule.forRoot(),
+    UserModule,
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.PG_HOST,
+      port: parseInt(process.env.PG_PORT, 10),
+      username: process.env.PG_USERNAME,
+      password: process.env.PG_PASSWORD,
+      database: process.env.PG_DATABASE,
+      entities: [User, Profile],
+      synchronize: true,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    }),
+    AuthModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: AtGuard,
+    },
+  ],
 })
 export class AppModule {}

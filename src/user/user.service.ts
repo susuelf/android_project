@@ -1,0 +1,74 @@
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './entities/user.entity';
+import { Repository } from 'typeorm';
+import { AuthDto } from 'src/auth/dto';
+import { Profile } from '../profile/entities/profile.entity';
+import { ProfileService } from 'src/profile/profile.service';
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    private readonly profileService: ProfileService,
+  ) {}
+  async findOne(email: string) {
+    return this.userRepo.findOne({
+      where: { email },
+      relations: ['profile'],
+    });
+  }
+  async findOneById(id: number) {
+    return this.userRepo.findOneBy({ id });
+  }
+  async findAll() {
+    return this.userRepo.find();
+  }
+  async creatUser({ username, email, password}: AuthDto) {
+    const user = this.userRepo.create({ email, password});
+
+    // blank profile for the user
+    const profile = await this.profileService.create({
+      username,
+      userId: user.id,
+    });
+
+    user.profile = profile;
+
+    return this.userRepo.save(user);
+  }
+  async updateRefreshToken(userId: number, refreshToken: string | null) {
+    if (refreshToken === null) {
+      return await this.userRepo.update(
+        { id: userId },
+        {
+          hashedRt: null,
+        },
+      );
+    } else {
+      return await this.userRepo.update(
+        { id: userId },
+        {
+          hashedRt: refreshToken,
+        },
+      );
+    }
+  }
+
+  async getProfileIdByUserId(userId: number): Promise<number | null> {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['profile'],
+    });
+
+    if (!user || !user.profile) {
+      return null;
+    }
+
+    return user.profile.id;
+  }
+
+  // async findByGithubId(githubId: string) {
+  //   console.log('githubId ', githubId);
+  //   return this.userRepo.findOneBy({ githubId });
+  // }
+}
