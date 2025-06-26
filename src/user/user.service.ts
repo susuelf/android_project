@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { AuthDto } from 'src/auth/dto';
 import { Profile } from '../profile/entities/profile.entity';
 import { ProfileService } from 'src/profile/profile.service';
+import { GoogleAuthDto } from 'src/auth/dto/google.auth.dto';
 @Injectable()
 export class UserService {
   constructor(
@@ -23,8 +24,8 @@ export class UserService {
   async findAll() {
     return this.userRepo.find();
   }
-  async creatUser({ username, email, password}: AuthDto) {
-    const user = this.userRepo.create({ email, password});
+  async creatUser({ username, email, password }: AuthDto) {
+    const user = this.userRepo.create({ email, password });
 
     // blank profile for the user
     const profile = await this.profileService.create({
@@ -36,6 +37,31 @@ export class UserService {
 
     return this.userRepo.save(user);
   }
+
+  async createGoogleUser({
+    username,
+    email,
+    profileImageUrl,
+    authProviderId,
+    authProvider,
+  }: GoogleAuthDto) {
+    const user = this.userRepo.create({
+      email,
+      auth_provider: authProvider,
+      auth_provider_id: authProviderId,
+    });
+
+    const profile = await this.profileService.create({
+      username,
+      userId: user.id,
+      profileImageUrl: profileImageUrl,
+    });
+
+    user.profile = profile;
+
+    return this.userRepo.save(user);
+  }
+
   async updateRefreshToken(userId: number, refreshToken: string | null) {
     if (refreshToken === null) {
       return await this.userRepo.update(
@@ -66,9 +92,4 @@ export class UserService {
 
     return user.profile.id;
   }
-
-  // async findByGithubId(githubId: string) {
-  //   console.log('githubId ', githubId);
-  //   return this.userRepo.findOneBy({ githubId });
-  // }
 }

@@ -5,6 +5,8 @@ import {
   OneToOne,
   JoinTable,
   ManyToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 @Entity()
@@ -29,4 +31,13 @@ export class Profile {
 
   @Column({ type: 'text', nullable: true, default: '' })
   fcmToken: string;
+
+  @Column({ type: 'json', nullable: true })
+  preferences: any;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

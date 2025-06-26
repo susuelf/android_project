@@ -1,4 +1,5 @@
 import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { AuthProvider } from '../enums';
 
 export class AuthDto {
   @IsString()

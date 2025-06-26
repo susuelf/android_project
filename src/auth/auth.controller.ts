@@ -8,11 +8,10 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthDto, SignInDto } from './dto';
-import { Tokens } from './types';
+import { AuthDto, AuthResponseDto, SignInDto } from './dto';
 import { RtGuard } from './common/guards';
 import { GetCurrentUser, GetCurrentUserId, Public } from './common/decorators';
-import { GithubSignUpDto } from './dto/github.sign.up.dto';
+
 
 @Controller('auth')
 export class AuthController {
@@ -28,17 +27,23 @@ export class AuthController {
   //   console.log('dto', dto);
   //   return this.authService.validateGitHubUser(dto);
   // }
+  @Public()
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  async googleAuth(@Body('idToken') idToken: string): Promise<AuthResponseDto> {
+    return this.authService.handleGoogleAuth(idToken);
+  }
 
   @Public()
   @Post('local/signup')
   @HttpCode(HttpStatus.CREATED)
-  async signupLocal(@Body() dto: AuthDto): Promise<Tokens> {
+  async signupLocal(@Body() dto: AuthDto): Promise<AuthResponseDto> {
     return this.authService.signupLocal(dto);
   }
   @Public()
   @Post('local/signin')
   @HttpCode(HttpStatus.OK)
-  async signinLocal(@Body() dto: SignInDto): Promise<Tokens> {
+  async signinLocal(@Body() dto: SignInDto): Promise<AuthResponseDto> {
     return this.authService.signinLocal(dto);
   }
 
