@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 import { Profile } from '../../profile/entities/profile.entity';
 import { AuthProvider } from 'src/auth/enums';
-import { Schedule } from 'src/habit/entities/schedule.entity';
-import { Progress } from 'src/habit/entities/progress.entity';
+import { Schedule } from 'src/schedule/entities/schedule.entity';
+import { Progress } from 'src/progress/entities/progress.entity';
 import { Habit } from 'src/habit/entities/habit.entity';
 
 @Entity()

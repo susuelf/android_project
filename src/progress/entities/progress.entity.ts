@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { Habit } from '../../habit/entities/habit.entity';
-import { Schedule } from './schedule.entity';
+import { Schedule } from '../../schedule/entities/schedule.entity';
 
 @Entity()
 export class Progress {

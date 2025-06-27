@@ -11,7 +11,7 @@ import {
 import { UserResponseDto } from './dtos/user-response.dto';
 
 @ApiTags('Users')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}

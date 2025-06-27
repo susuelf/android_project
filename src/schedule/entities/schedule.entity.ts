@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { Habit } from '../../habit/entities/habit.entity';
-import { Progress } from './progress.entity';
+import { Progress } from '../../progress/entities/progress.entity';
 
 export enum ScheduleStatus {
   PLANNED = 'Planned',

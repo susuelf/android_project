@@ -8,8 +8,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
-import { Progress } from './progress.entity';
-import { Schedule } from './schedule.entity';
+import { Progress } from '../../progress/entities/progress.entity';
+import { Schedule } from '../../schedule/entities/schedule.entity';
 
 export enum HabitCategory {
   EXERCISE = 'Exercise',

@@ -12,8 +12,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { HabitModule } from './habit/habit.module';
 import { Habit } from './habit/entities/habit.entity';
-import { Progress } from './habit/entities/progress.entity';
-import { Schedule } from './habit/entities/schedule.entity';
+import { Progress } from './progress/entities/progress.entity';
+import { Schedule } from './schedule/entities/schedule.entity';
+import { ScheduleModule } from './schedule/schedule.module';
+import { ProgressModule } from './progress/progress.module';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { Schedule } from './habit/entities/schedule.entity';
     }),
     AuthModule,
     HabitModule,
+    ScheduleModule,
+    ProgressModule,
   ],
   controllers: [AppController],
   providers: [
