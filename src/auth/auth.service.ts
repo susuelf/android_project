@@ -11,7 +11,7 @@ import { Tokens } from './types';
 import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
 import { GoogleAuthDto } from './dto/google.auth.dto';
-import { UserResponseDto } from './dto/user.response.dto';
+import { UserResponseDto } from 'src/user/dtos/user-response.dto';
 import { AuthProvider } from './enums';
 import { User } from 'src/user/entities/user.entity';
 
@@ -186,7 +186,7 @@ export class AuthService {
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(jwtPayload, {
         secret: process.env.AT_SECRET,
-        expiresIn: '1h',
+        expiresIn: '1d',
       }),
       this.jwtService.signAsync(jwtPayload, {
         secret: process.env.RT_SECRET,
