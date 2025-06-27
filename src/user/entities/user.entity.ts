@@ -4,9 +4,13 @@ import {
   PrimaryGeneratedColumn,
   OneToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Profile } from '../../profile/entities/profile.entity';
 import { AuthProvider } from 'src/auth/enums';
+import { Schedule } from 'src/habit/entities/schedule.entity';
+import { Progress } from 'src/habit/entities/progress.entity';
+import { Habit } from 'src/habit/entities/habit.entity';
 
 @Entity()
 export class User {
@@ -32,4 +36,13 @@ export class User {
   @OneToOne(() => Profile, (profile) => profile.user, { eager: true })
   @JoinColumn()
   profile: Profile;
+
+  @OneToMany(() => Schedule, (schedule) => schedule.user)
+  schedules: Schedule[];
+
+  @OneToMany(() => Progress, (progress) => progress.user)
+  progress: Progress[];
+
+  @OneToMany(() => Habit, (habit) => habit.user)
+  habits: Habit[];
 }

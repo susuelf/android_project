@@ -10,6 +10,10 @@ import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
+import { HabitModule } from './habit/habit.module';
+import { Habit } from './habit/entities/habit.entity';
+import { Progress } from './habit/entities/progress.entity';
+import { Schedule } from './habit/entities/schedule.entity';
 
 @Module({
   imports: [
@@ -23,13 +27,14 @@ import { AuthModule } from './auth/auth.module';
       username: process.env.PG_USERNAME,
       password: process.env.PG_PASSWORD,
       database: process.env.PG_DATABASE,
-      entities: [User, Profile],
+      entities: [User, Profile, Habit, Schedule, Progress],
       synchronize: true,
       ssl: {
         rejectUnauthorized: false,
       },
     }),
     AuthModule,
+    HabitModule,
   ],
   controllers: [AppController],
   providers: [
