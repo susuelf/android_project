@@ -36,7 +36,7 @@ export class AuthService {
   //   console.log('user: ', user);
   //   if (!user) {
   //     // User doesn't exist, create a new one
-  //     user = await this.userService.creatUser({
+  //     user = await this.userService.createUser({
   //       githubId: githubId,
   //       username: username,
   //       email: email || `${username}@github.com`,
@@ -116,13 +116,13 @@ export class AuthService {
   async validateGoogleUser(googleUser: CreateUserDto) {
     const user = await this.userService.findOne(googleUser.email);
     if (user) return user;
-    return this.userService.creatUser(googleUser);
+    return this.userService.createUser(googleUser);
   }
 
   async signupLocal(dto: AuthDto): Promise<AuthResponseDto> {
     const hash = await this.hashData(dto.password);
 
-    const createdUser = await this.userService.creatUser({
+    const createdUser = await this.userService.createUser({
       username: dto.username,
       email: dto.email,
       password: hash,
@@ -134,6 +134,7 @@ export class AuthService {
       createdUser.profile.id,
     );
     await this.updateRtHash(createdUser.id, tokens.refreshToken);
+    
     return await this.createUserResponseForAuth(
       createdUser,
       tokens,

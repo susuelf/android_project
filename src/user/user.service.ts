@@ -6,6 +6,8 @@ import { AuthDto } from 'src/auth/dto';
 import { Profile } from '../profile/entities/profile.entity';
 import { ProfileService } from 'src/profile/profile.service';
 import { GoogleAuthDto } from 'src/auth/dto/google.auth.dto';
+import { UserResponseDto } from './dtos/user-response.dto';
+import { ProfileResponseDto } from 'src/profile/dto/profile-response.dto';
 @Injectable()
 export class UserService {
   constructor(
@@ -21,10 +23,11 @@ export class UserService {
   async findOneById(id: number) {
     return this.userRepo.findOneBy({ id });
   }
-  async findAll() {
-    return this.userRepo.find();
+  async findAll(): Promise<UserResponseDto[]> {
+    const users = await this.userRepo.find();
+    return users.map((user) => this.mapToResponseDto(user));
   }
-  async creatUser({ username, email, password }: AuthDto) {
+  async createUser({ username, email, password }: AuthDto) {
     const user = this.userRepo.create({ email, password });
 
     // blank profile for the user
@@ -91,5 +94,29 @@ export class UserService {
     }
 
     return user.profile.id;
+  }
+
+  private mapToResponseDto(user: User): UserResponseDto {
+    return {
+      id: user.id,
+      email: user.email,
+      auth_provider: user.auth_provider,
+      profile: this.mapToProfileResponseDto(user.profile),
+    };
+  }
+
+  private mapToProfileResponseDto(profile: Profile): ProfileResponseDto {
+    if (!profile) return null;
+    return {
+      id: profile.id,
+      username: profile.username,
+      description: profile.description,
+      profileImageUrl: profile.profileImageUrl,
+      coverImageUrl: profile.coverImageUrl,
+      fcmToken: profile.fcmToken,
+      preferences: profile.preferences,
+      created_at: profile.created_at,
+      updated_at: profile.updated_at,
+    };
   }
 }

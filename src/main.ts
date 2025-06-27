@@ -16,10 +16,20 @@ async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'Authorization',
-        description: 'Enter your JWT token',
+        description: 'Enter your JWT access token',
         in: 'header',
       },
       'access-token', // You can name this, see below how to match it in controllers
+    )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        description: 'Enter your JWT refresh token',
+      },
+      'refresh-token',
     )
     .build();
 
