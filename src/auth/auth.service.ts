@@ -14,6 +14,7 @@ import { GoogleAuthDto } from './dto/google.auth.dto';
 import { UserResponseDto } from 'src/user/dtos/user-response.dto';
 import { AuthProvider } from './enums';
 import { User } from 'src/user/entities/user.entity';
+import { ResetPasswordDto } from './dto/reset.password.dto';
 
 @Injectable()
 export class AuthService {
@@ -134,7 +135,7 @@ export class AuthService {
       createdUser.profile.id,
     );
     await this.updateRtHash(createdUser.id, tokens.refreshToken);
-    
+
     return await this.createUserResponseForAuth(
       createdUser,
       tokens,
@@ -199,5 +200,17 @@ export class AuthService {
       accessToken: at,
       refreshToken: rt,
     };
+  }
+  async resetPassword(userId: number, dto: ResetPasswordDto): Promise<string> {
+    const user = await this.findUserById(userId);
+    if (!user) throw new ForbiddenException('User not found');
+
+    const isMatch = await bcrypt.compare(dto.oldPassword, user.password);
+    if (!isMatch) throw new ForbiddenException('Incorrect current password');
+
+    const hashedPassword = await this.hashData(dto.newPassword);
+    await this.userService.updatePassword(userId, hashedPassword);
+
+    return 'Password updated successfully';
   }
 }

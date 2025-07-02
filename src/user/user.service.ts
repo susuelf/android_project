@@ -119,4 +119,8 @@ export class UserService {
       updated_at: profile.updated_at,
     };
   }
+
+  async updatePassword(userId: number, newHashedPassword: string) {
+    await this.userRepo.update({ id: userId }, { password: newHashedPassword });
+  }
 }

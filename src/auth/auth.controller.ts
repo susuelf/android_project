@@ -18,6 +18,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { ResetPasswordDto } from './dto/reset.password.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -104,5 +105,24 @@ export class AuthController {
     @GetCurrentUser('refreshToken') refreshToken: string,
   ) {
     return this.authService.refreshTokens(userId, refreshToken);
+  }
+
+  @Post('local/reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Reset Password',
+    description:
+      'Allows authenticated users to change their password by providing the current password.',
+  })
+  @ApiResponse({ status: 200, description: 'Password reset successful.' })
+  @ApiResponse({ status: 403, description: 'Incorrect current password.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async resetPassword(
+    @GetCurrentUserId() userId: number,
+    @Body() dto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
+    const msg = await this.authService.resetPassword(userId, dto);
+    return { message: msg };
   }
 }
