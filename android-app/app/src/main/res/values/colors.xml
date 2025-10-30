@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Színpaletta az alkalmazáshoz -->
+<resources>
+    <!-- Elsődleges színek -->
+    <color name="primary">#6366F1</color>
+    <color name="primary_dark">#4F46E5</color>
+    <color name="primary_light">#818CF8</color>
+    
+    <!-- Háttér színek -->
+    <color name="background">#FFFFFF</color>
+    <color name="surface">#F9FAFB</color>
+    
+    <!-- Szöveg színek -->
+    <color name="text_primary">#111827</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="text_hint">#9CA3AF</color>
+    
+    <!-- Státusz színek -->
+    <color name="success">#10B981</color>
+    <color name="error">#EF4444</color>
+    <color name="warning">#F59E0B</color>
+    <color name="info">#3B82F6</color>
+    
+    <!-- Kiegészítő színek -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="divider">#E5E7EB</color>
+</resources>

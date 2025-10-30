@@ -1,4 +1,47 @@
 <resources>
-    <string name="app_name">Progr3ss Android</string>
+    <!-- Alkalmazás neve -->
+    <string name="app_name">Progr3ss</string>
+    
+    <!-- Általános szövegek -->
+    <string name="welcome">Üdvözlünk!</string>
+    <string name="loading">Betöltés…</string>
+    <string name="error_generic">Hiba történt. Próbáld újra később.</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Mégse</string>
+    <string name="save">Mentés</string>
+    <string name="delete">Törlés</string>
+    <string name="edit">Szerkesztés</string>
+    
+    <!-- Auth szövegek -->
+    <string name="login">Bejelentkezés</string>
+    <string name="register">Regisztráció</string>
+    <string name="email">E-mail cím</string>
+    <string name="password">Jelszó</string>
+    <string name="password_confirm">Jelszó megerősítése</string>
+    <string name="username">Felhasználónév</string>
+    <string name="forgot_password">Elfelejtett jelszó?</string>
+    <string name="no_account">Nincs még fiókod?</string>
+    <string name="already_have_account">Már van fiókod?</string>
+    <string name="sign_in">Belépés</string>
+    <string name="sign_up">Regisztráció</string>
+    <string name="logout">Kijelentkezés</string>
+    
+    <!-- Validációs hibák -->
+    <string name="error_email_required">E-mail cím megadása kötelező</string>
+    <string name="error_email_invalid">Érvénytelen e-mail cím</string>
+    <string name="error_password_required">Jelszó megadása kötelező</string>
+    <string name="error_password_short">A jelszó legalább 6 karakter legyen</string>
+    <string name="error_password_mismatch">A jelszavak nem egyeznek</string>
+    <string name="error_username_required">Felhasználónév megadása kötelező</string>
+    
+    <!-- Home képernyő -->
+    <string name="home_title">Ma</string>
+    <string name="add_schedule">Új ütemezés</string>
+    <string name="no_schedules">Nincs még ütemezett szokás</string>
+    
+    <!-- Profile képernyő -->
+    <string name="profile">Profil</string>
+    <string name="my_habits">Szokásaim</string>
+    <string name="settings">Beállítások</string>
 </resources>
 
