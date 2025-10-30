@@ -16,62 +16,56 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 /**
- * Sötét téma színséma.
+ * Theme.kt - Téma konfiguráció
  * 
- * Definiálja a Material Design 3 színeket sötét módban.
+ * Ez a fájl tartalmazza az alkalmazás témáját (világos/sötét mód)
+ * és a színsémákat.
  */
+
+// Sötét téma színséma
 private val DarkColorScheme = darkColorScheme(
-    primary = DarkPrimary,
-    secondary = DarkSecondary,
-    background = DarkBackground,
-    surface = DarkSurface,
-    onPrimary = OnPrimary,
-    onSecondary = OnSecondary,
-    onBackground = DarkOnBackground,
-    onSurface = DarkOnSurface,
-    error = Error,
-    onError = OnError
+    primary = Purple80,
+    secondary = PurpleGrey80,
+    tertiary = Pink80
 )
 
-/**
- * Világos téma színséma.
- * 
- * Definiálja a Material Design 3 színeket világos módban.
- */
+// Világos téma színséma
 private val LightColorScheme = lightColorScheme(
-    primary = Primary,
-    secondary = Secondary,
-    background = Background,
-    surface = Surface,
-    onPrimary = OnPrimary,
-    onSecondary = OnSecondary,
-    onBackground = OnBackground,
-    onSurface = OnSurface,
-    error = Error,
-    onError = OnError
+    primary = Purple40,
+    secondary = PurpleGrey40,
+    tertiary = Pink40
+
+    /* További színek felülírhatók szükség szerint:
+    background = Color(0xFFFFFBFE),
+    surface = Color(0xFFFFFBFE),
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onTertiary = Color.White,
+    onBackground = Color(0xFF1C1B1F),
+    onSurface = Color(0xFF1C1B1F),
+    */
 )
 
 /**
- * A fő téma komponens az alkalmazáshoz.
+ * Progr3SSTheme - Az alkalmazás fő témája
  * 
- * Ez a Composable függvény alkalmazza a Material Design 3 témát
- * az egész alkalmazásra, beleértve a színeket, tipográfiát.
+ * Ez a Composable függvény alkalmazza a témát az egész alkalmazásra.
+ * Támogatja a világos/sötét módot és az Android 12+ dinamikus színeket.
  * 
- * @param darkTheme Boolean - ha true, sötét témát használ, egyébként világos témát.
- *                  Alapértelmezett: rendszer beállítás szerint.
- * @param dynamicColor Boolean - ha true és Android 12+ eszközön fut, dinamikus színeket használ.
- * @param content A téma alatt megjelenítendő tartalom.
+ * @param darkTheme Boolean - Sötét téma használata (alapértelmezett: rendszerbeállítás szerint)
+ * @param dynamicColor Boolean - Dinamikus színek használata Android 12+ esetén
+ * @param content Composable lambda - A téma alatt megjelenítendő tartalom
  */
 @Composable
 fun Progr3SSTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dinamikus szín Android 12+ eszközökön elérhető
+    // Dinamikus színek elérhetők Android 12+ verzióktól
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    // Színséma kiválasztása
+    // Színséma kiválasztása a beállítások alapján
     val colorScheme = when {
-        // Dinamikus színek használata Android 12+ esetén
+        // Android 12+ és dinamikus színek engedélyezve
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -82,9 +76,9 @@ fun Progr3SSTheme(
         else -> LightColorScheme
     }
     
-    // Statusbar színének beállítása
     val view = LocalView.current
     if (!view.isInEditMode) {
+        // SideEffect használata az állapotváltozáskor történő egyszer futó kód futtatására
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
@@ -92,7 +86,7 @@ fun Progr3SSTheme(
         }
     }
 
-    // Material Theme alkalmazása a tartalomra
+    // Material 3 téma alkalmazása
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,

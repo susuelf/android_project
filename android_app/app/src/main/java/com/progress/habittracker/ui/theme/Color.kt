@@ -3,39 +3,24 @@ package com.progress.habittracker.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Színpaletta az alkalmazáshoz.
+ * Color.kt - Az alkalmazás színpalettája
  * 
- * Ezek a színek alkotják az alkalmazás vizuális identitását.
- * A Material Design 3 színrendszer szerint vannak definiálva.
+ * Ez a fájl tartalmazza az alkalmazás összes színdefinícióját.
+ * A színek külön vannak definiálva a világos és sötét témához.
  */
 
-// Fő márka színek (Primary)
-val Primary = Color(0xFF6200EE)
-val PrimaryVariant = Color(0xFF3700B3)
-val OnPrimary = Color(0xFFFFFFFF)
+// Sötét téma színek (80-as árnyalatok - világosabb színek sötét háttéren)
+val Purple80 = Color(0xFFD0BCFF)
+val PurpleGrey80 = Color(0xFFCCC2DC)
+val Pink80 = Color(0xFFEFB8C8)
 
-// Másodlagos színek (Secondary)
-val Secondary = Color(0xFF03DAC6)
-val SecondaryVariant = Color(0xFF018786)
-val OnSecondary = Color(0xFF000000)
+// Világos téma színek (40-es árnyalatok - sötétebb színek világos háttéren)
+val Purple40 = Color(0xFF6650a4)
+val PurpleGrey40 = Color(0xFF625b71)
+val Pink40 = Color(0xFF7D5260)
 
-// Háttér színek
-val Background = Color(0xFFFFFFFF)
-val OnBackground = Color(0xFF000000)
-
-// Felület színek (Surface)
-val Surface = Color(0xFFFFFFFF)
-val OnSurface = Color(0xFF000000)
-
-// Hiba színek
-val Error = Color(0xFFB00020)
-val OnError = Color(0xFFFFFFFF)
-
-// Sötét téma színei
-val DarkPrimary = Color(0xFFBB86FC)
-val DarkPrimaryVariant = Color(0xFF3700B3)
-val DarkSecondary = Color(0xFF03DAC6)
-val DarkBackground = Color(0xFF121212)
-val DarkSurface = Color(0xFF121212)
-val DarkOnBackground = Color(0xFFFFFFFF)
-val DarkOnSurface = Color(0xFFFFFFFF)
+// TODO: Progr3SS specifikus színek hozzáadása a design szerint
+// Például:
+// val ProgressGreen = Color(0xFF4CAF50)
+// val HabitBlue = Color(0xFF2196F3)
+// val ScheduleOrange = Color(0xFFFF9800)

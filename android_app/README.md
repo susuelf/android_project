@@ -1,87 +1,108 @@
-# Progr3SS - Android Frontend
+# Progr3SS - Android Frontend UI
 
-Ez az Android alkalmazás a Progr3SS Habit Tracker projekt frontend része.
+Ez az Android alkalmazás a Progr3SS Habit Planner & Tracker projekt frontend része.
 
-## Technológiák
+## Technológiai Stack
 
-- **Kotlin** - Programozási nyelv
-- **Jetpack Compose** - Modern UI framework
-- **Material Design 3** - Design rendszer
-- **Hilt** - Dependency Injection
-- **Retrofit** - REST API kommunikáció
-- **Coroutines & Flow** - Aszinkron programozás
-- **Navigation Compose** - Képernyők közötti navigáció
-- **DataStore** - Token tárolás
-- **Coil** - Képbetöltés
+- **Nyelv**: Kotlin
+- **UI Framework**: Jetpack Compose
+- **Minimum SDK**: 24 (Android 7.0)
+- **Target SDK**: 36
+- **Build Tool**: Gradle (Kotlin DSL)
 
-## Projekt struktúra
+## Projekt Struktúra
 
 ```
-app/src/main/java/com/progress/habittracker/
-├── ui/
-│   ├── theme/          # Téma (színek, tipográfia)
-│   ├── screens/        # Képernyők (Login, Home, Profile, stb.)
-│   ├── components/     # Újrafelhasználható UI komponensek
-│   └── navigation/     # Navigation graph
-├── data/
-│   ├── remote/         # API szolgáltatások
-│   ├── local/          # Helyi adattárolás (DataStore)
-│   ├── repository/     # Repository implementációk
-│   └── model/          # Data modellek (DTO-k)
-├── domain/
-│   ├── model/          # Domain modellek
-│   ├── repository/     # Repository interfészek
-│   └── usecase/        # Use case-ek (üzleti logika)
-├── di/                 # Dependency Injection modulok
-├── util/               # Segéd osztályok és extension-ök
-└── MainActivity.kt     # Fő Activity
-
+android_app/
+├── app/
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/progress/habittracker/
+│   │   │   │   ├── MainActivity.kt          # Fő Activity
+│   │   │   │   └── ui/
+│   │   │   │       └── theme/               # Téma fájlok
+│   │   │   │           ├── Color.kt         # Színpalétta
+│   │   │   │           ├── Theme.kt         # Téma konfiguráció
+│   │   │   │           └── Type.kt          # Tipográfia
+│   │   │   ├── res/                         # Erőforrások (layouts, strings, stb.)
+│   │   │   └── AndroidManifest.xml          # Manifest fájl
+│   │   ├── androidTest/                     # Eszköz tesztek
+│   │   └── test/                            # Unit tesztek
+│   └── build.gradle.kts                     # App szintű build konfiguráció
+├── gradle/
+│   └── libs.versions.toml                   # Verzió katalógus
+├── build.gradle.kts                         # Projekt szintű build konfiguráció
+└── settings.gradle.kts                      # Gradle beállítások
 ```
 
-## Fordítás és futtatás
+## Fejlesztési Terv
 
-### Előfeltételek
+A fejlesztés a PROJECT_SPECIFICATION.md szerint történik, alpontonként külön branchekben:
 
-- Android Studio Ladybug | 2024.2.1 vagy újabb
+1. **Alapstruktúra** (jelenlegi branch) ✅
+   - Projekt inicializálás
+   - Alapvető package struktúra
+   - Téma beállítások
+
+2. **Következő lépések**:
+   - Authentikáció képernyők (Login, Register, Reset Password)
+   - Home Screen és navigáció
+   - Habit kezelés
+   - Schedule kezelés
+   - Profil kezelés
+   - Progress követés
+
+## Build és Futtatás
+
+### Követelmények
+- Android Studio (legújabb verzió)
 - JDK 11 vagy újabb
-- Android SDK 24+ (API level 24)
+- Android SDK 36
 
-### Backend elindítása
-
-Az Android alkalmazás a NestJS backend-del kommunikál. Először indítsd el a backend-et:
+### Build parancsok
 
 ```bash
-# A projekt root könyvtárából
-npm install
-npm run start:dev
+# Debug build készítése
+./gradlew assembleDebug
+
+# Release build készítése
+./gradlew assembleRelease
+
+# Tesztek futtatása
+./gradlew test
+
+# Eszköz tesztek futtatása
+./gradlew connectedAndroidTest
 ```
 
-A backend alapértelmezetten a `http://localhost:3000` címen fog futni.
+### Futtatás Android Studio-ban
 
-### Android app futtatása
+1. Nyisd meg a projektet Android Studio-ban
+2. Várj, amíg a Gradle sync befejeződik
+3. Válassz egy emulatort vagy csatlakoztass egy eszközt
+4. Kattints a Run gombra (vagy Shift+F10)
 
-1. Nyisd meg az `android_app` mappát Android Studio-ban
-2. Várj amíg a Gradle sync befejeződik
-3. Csatlakoztass egy Android eszközt vagy indíts el egy emulátort
-4. Kattints a Run gombra (vagy nyomj Shift+F10)
+## Backend Kapcsolat
 
-### API Base URL konfiguráció
+Az alkalmazás a projekt gyökerében található NestJS backend-del kommunikál.
+Backend URL: `http://localhost:3000` (development)
 
-Az API base URL a `app/build.gradle.kts` fájlban van definiálva:
+## Függőségek
 
-- **Debug build**: `http://10.0.2.2:3000` (Android emulátor localhost)
-- **Release build**: `https://api.example.com` (Éles szerver URL)
+Főbb függőségek:
+- AndroidX Core KTX
+- AndroidX AppCompat
+- Material Components
+- Jetpack Compose BOM
+- Jetpack Compose UI
+- Jetpack Compose Material3
+- Lifecycle Runtime KTX
+- Activity Compose
 
-> Megjegyzés: Ha fizikai eszközön tesztelsz, módosítsd a debug build URL-t a számítógéped lokális IP címére.
+Részletes verzió információk: `gradle/libs.versions.toml`
 
-## Fejlesztési folyamat
+## Megjegyzések
 
-A projekt feature branch alapú fejlesztést követ:
-
-1. Minden új feature külön branch-en készül
-2. A branch neve: `feature/feature-name`
-3. Fejlesztés után merge a main branch-be
-
-## Hozzájárulás
-
-A kód kommentezése magyar nyelven történik a jobb érthetőség érdekében.
+- A kód magyar nyelvű kommentekkel van ellátva a könnyebb megértés érdekében
+- A projekt branch-based fejlesztést követ
+- Minden feature külön branchben készül és merge után kerül a main-be

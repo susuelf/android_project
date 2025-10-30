@@ -6,48 +6,37 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.progress.habittracker.ui.theme.Progr3SSTheme
-import dagger.hilt.android.AndroidEntryPoint
 
 /**
- * Az alkalmazás fő Activity-je.
+ * MainActivity - Az alkalmazás fő belépési pontja
  * 
- * @AndroidEntryPoint annotáció lehetővé teszi a Hilt dependency injection használatát
- * ebben az Activity-ben.
- * 
- * Ez az Activity inicializálja a Jetpack Compose UI-t és kezeli
- * az alkalmazás általános életciklusát.
+ * Ez az Activity felelős az alkalmazás indításáért és a Jetpack Compose UI inicializálásáért.
  */
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    
+    /**
+     * onCreate - Az Activity létrehozásakor hívódik meg
+     * 
+     * @param savedInstanceState Az Activity korábbi állapota, ha van ilyen
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Edge-to-edge kijelző használata (modern Android design)
+        // Edge-to-edge megjelenítés engedélyezése (teljes képernyős layout)
         enableEdgeToEdge()
         
-        // Jetpack Compose tartalom beállítása
+        // Compose UI tartalom beállítása
         setContent {
             Progr3SSTheme {
-                // Scaffold biztosítja a Material Design 3 alapstruktúrát
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        color = MaterialTheme.colorScheme.background
-                    ) {
-                        // Üdvözlő szöveg - ez lesz később lecserélve a navigation graph-ra
-                        Greeting("Progr3SS")
-                    }
+                    Greeting(
+                        name = "Progr3SS",
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
             }
         }
@@ -55,25 +44,24 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * Egyszerű üdvözlő szöveg komponens.
+ * Greeting - Egyszerű üdvözlő komponens
  * 
- * @param name A megjelenítendő név
+ * @param name A megjelenítendő név az üdvözlésben
  * @param modifier Modifier a komponens testreszabásához
  */
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
-        text = "Welcome to $name!",
-        modifier = modifier,
-        style = MaterialTheme.typography.headlineMedium
+        text = "Hello $name!",
+        modifier = modifier
     )
 }
 
 /**
- * Preview funkció a Greeting komponens előnézetéhez Android Studio-ban.
+ * GreetingPreview - Előnézet a Greeting komponenshez
  * 
- * Lehetővé teszi a komponens megjelenítését az Android Studio Design panelében,
- * anélkül, hogy futtatni kellene az alkalmazást.
+ * Ez a preview lehetővé teszi a komponens megtekintését az Android Studio-ban
+ * anélkül, hogy az alkalmazást futtatni kellene.
  */
 @Preview(showBackground = true)
 @Composable
