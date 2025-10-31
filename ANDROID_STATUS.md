@@ -1,8 +1,8 @@
 # Android UI Projekt - Állapot Jelentés
 
 **Dátum**: 2025-10-31  
-**Aktuális Branch**: `feature/schedule-details`  
-**Állapot**: ✅ Schedule Details Screen kész, Create Schedule következik
+**Aktuális Branch**: `main`  
+**Állapot**: ✅ Create Schedule Screen kész és merged to main, Add Habit következik
 
 ---
 
@@ -423,38 +423,235 @@ com.progress.habittracker/
 
 ---
 
+### ✅ 7. Create Schedule Screen (feature/create-schedule → MERGED to main) - **ÚJ!**
+
+#### Habit Models ✅
+**Fájl**: `HabitModels.kt`
+- `CreateHabitRequest` - Új habit létrehozásához
+- Type aliases habit API válaszokhoz
+
+#### Schedule Request Models ✅
+**Fájl**: `ScheduleModels.kt` (bővítve)
+- `RepeatPattern` enum - None, Daily, Weekdays, Weekends
+- `CreateCustomScheduleRequest` - Egyszeri schedule (8 mező)
+- `CreateRecurringScheduleRequest` - Ismétlődő schedule (9 mező)
+- `CreateWeekdayRecurringScheduleRequest` - Hétköznapi ismétlődés (8 mező)
+
+#### Habit API Service ✅
+**Fájl**: `HabitApiService.kt`
+- `getHabits()` - GET /habit - Felhasználó habit-jei
+- `createHabit()` - POST /habit - Új habit létrehozása
+- `getCategories()` - GET /habit/categories - Kategóriák lekérése
+- Bearer token authentication
+
+#### Schedule API Service Bővítés ✅
+**Fájl**: `ScheduleApiService.kt` (frissítve)
+- `createCustomSchedule()` - POST /schedule/custom - Egyszeri schedule
+- `createRecurringSchedule()` - POST /schedule/recurring - Ismétlődő schedule
+- `createWeekdayRecurringSchedule()` - POST /schedule/recurring/weekdays
+
+#### Habit Repository ✅
+**Fájl**: `HabitRepository.kt`
+- `getHabits()` - Flow<Resource<List<HabitResponseDto>>>
+- `createHabit()` - Flow<Resource<HabitResponseDto>>
+- `getCategories()` - Flow<Resource<List<HabitCategoryResponseDto>>>
+- Token management, error handling (401/400/404)
+- Flow-based reaktív API
+
+#### Schedule Repository Bővítés ✅
+**Fájl**: `ScheduleRepository.kt` (frissítve)
+- `createCustomSchedule()` - Egyszeri schedule létrehozás
+- `createRecurringSchedule()` - Ismétlődő schedule-ok létrehozása
+- Teljes Resource pattern error handling
+
+#### Create Schedule ViewModel ✅
+**Fájlok**: `CreateScheduleViewModel.kt`, `CreateScheduleViewModelFactory.kt`
+
+**CreateScheduleUiState**:
+- `habits: List<HabitResponseDto>` - Elérhető habit-ek
+- `selectedHabit: HabitResponseDto?` - Kiválasztott habit
+- `selectedDate: LocalDate` - Választott dátum
+- `startTime: LocalTime` - Kezdési időpont
+- `endTime: LocalTime?` - Befejezési időpont
+- `durationMinutes: Int` - Időtartam percben
+- `notes: String` - Jegyzetek
+- `repeatPattern: RepeatPattern` - Ismétlődés típusa
+- `repeatDays: Int` - Ismétlődés napok száma
+- `selectedWeekdays: Set<DayOfWeek>` - Kiválasztott hétköznapok
+- `isLoadingHabits: Boolean` - Habit-ek betöltése
+- `isCreating: Boolean` - Schedule létrehozás folyamatban
+- `createSuccess: Boolean` - Sikeres létrehozás flag
+- `error: String?` - Hibaüzenet
+
+**Funkciók**:
+- `loadHabits()` - Habit-ek betöltése dropdown-hoz
+- `selectHabit()` - Habit kiválasztás
+- `setDate()` / `setStartTime()` / `setEndTime()` - Időpont beállítások
+- `setDuration()` - Duration manuális beállítás
+- `setNotes()` - Jegyzetek
+- `setRepeatPattern()` - Ismétlődés pattern váltás
+- `toggleWeekday()` - Hétköznapok ki/bekapcsolás
+- `createSchedule()` - Schedule létrehozás (dispatcher)
+- `createCustomSchedule()` - Egyszeri schedule API hívás
+- `createRecurringSchedule()` - Ismétlődő schedule API hívás
+
+**StateFlow alapú reaktív state management**
+
+#### Create Schedule UI ✅
+**Fájl**: `CreateScheduleScreen.kt` (383 sor)
+
+**CreateScheduleScreen komponens**:
+- **TopAppBar** - "Új Schedule" cím, vissza gomb
+  
+- **Habit Selection Section** - ExposedDropdownMenuBox
+  - Habit lista dropdown
+  - "Válassz habit-et" placeholder
+  - Kiválasztott habit megjelenítése
+  - Loading state amikor habit-ek betöltése
+  
+- **Date & Time Section** - Cards
+  - Dátum picker (alapértelmezett: ma)
+  - Kezdési időpont megjelenítés
+  - Duration input (perc)
+  
+- **Repeat Pattern Section** - FilterChips
+  - Egyszeri (None)
+  - Napi (Daily)
+  - Hétköznap (Weekdays)
+  - Hétvége (Weekends)
+  - Chip selection handling
+  
+- **Notes Section** - OutlinedTextField
+  - Opcionális jegyzetek
+  - Multi-line input
+  
+- **Bottom Action Bar** - Button
+  - "Schedule Létrehozása" gomb
+  - Loading state (CircularProgressIndicator)
+  - Disabled amikor isCreating
+  - Validáció: habit kiválasztva
+  
+- **Navigation**
+  - LaunchedEffect(createSuccess) -> popBackStack
+  - Automatikus visszanavigálás Home-ra sikeres létrehozás után
+  
+- **Error Handling** - Snackbar
+  - Hibaüzenetek megjelenítése
+  - Automatikus dismissal
+
+**Material 3 Design** követése minden komponensben
+
+#### Dinamikus Backend IP Felismerés ✅
+**Fájlok**: `NetworkUtils.kt`, `HabitTrackerApplication.kt`, `RetrofitClient.kt`
+
+**NetworkUtils object**:
+- `getBackendBaseUrl(context)` - Gateway IP automatikus detektálás
+- `getWifiGatewayIp()` - WiFi DHCP gateway lekérése
+- `getDeviceIpAddress()` - Device IP cím
+- `guessGatewayFromDeviceIp()` - Gateway becslés
+- `isNetworkAvailable()` - Hálózati kapcsolat ellenőrzés
+
+**HabitTrackerApplication**:
+- Application class onCreate() -> RetrofitClient inicializálás
+- Automatikus gateway IP felismerés app induláskor
+
+**RetrofitClient frissítés**:
+- `initialize(context)` metódus
+- Dinamikus baseUrl generálás
+- Hardcoded IP-t lecserélte
+
+**AndroidManifest frissítés**:
+- `android:name=".HabitTrackerApplication"`
+- `ACCESS_WIFI_STATE` permission
+
+**Előny**: Nem kell manuálisan frissíteni az IP címet hálózat váltáskor!
+
+#### Package Struktúra (frissítve) ✅
+```
+com.progress.habittracker/
+├── data/
+│   ├── local/
+│   │   └── TokenManager.kt
+│   ├── model/
+│   │   ├── AuthModels.kt
+│   │   ├── ScheduleModels.kt (bővítve)
+│   │   └── HabitModels.kt                # ✨ ÚJ
+│   ├── remote/
+│   │   ├── AuthApiService.kt
+│   │   ├── ScheduleApiService.kt (bővítve)
+│   │   ├── HabitApiService.kt            # ✨ ÚJ
+│   │   └── RetrofitClient.kt (frissítve)
+│   └── repository/
+│       ├── AuthRepository.kt
+│       ├── ScheduleRepository.kt (bővítve)
+│       └── HabitRepository.kt            # ✨ ÚJ
+├── navigation/
+│   ├── Screen.kt
+│   └── NavGraph.kt (frissítve)
+├── ui/
+│   ├── screens/
+│   │   ├── auth/
+│   │   │   ├── SplashScreen.kt
+│   │   │   ├── LoginScreen.kt
+│   │   │   └── RegisterScreen.kt
+│   │   ├── home/
+│   │   │   ├── HomeScreen.kt
+│   │   │   └── ScheduleItemCard.kt
+│   │   ├── scheduledetails/
+│   │   │   ├── ScheduleDetailsScreen.kt
+│   │   │   └── ProgressItemCard.kt
+│   │   └── createschedule/              # ✨ ÚJ
+│   │       └── CreateScheduleScreen.kt
+│   ├── viewmodel/
+│   │   ├── AuthViewModel.kt
+│   │   ├── AuthViewModelFactory.kt
+│   │   ├── HomeViewModel.kt
+│   │   ├── HomeViewModelFactory.kt
+│   │   ├── ScheduleDetailsViewModel.kt
+│   │   ├── ScheduleDetailsViewModelFactory.kt
+│   │   ├── CreateScheduleViewModel.kt        # ✨ ÚJ
+│   │   └── CreateScheduleViewModelFactory.kt # ✨ ÚJ
+│   └── theme/
+├── util/
+│   ├── Resource.kt
+│   └── NetworkUtils.kt                   # ✨ ÚJ
+└── HabitTrackerApplication.kt            # ✨ ÚJ
+```
+
+---
+
 ## Következő Lépések
 
-### 🎯 Most: Create Schedule Screen
+### 🎯 Most: Add Habit Screen
 
-**Branch név**: `feature/create-schedule`
+**Branch név**: `feature/add-habit`
 
 **Elkészítendő funkciók:**
 
-1. **Create Schedule Screen**
-   - Habit kiválasztás dropdown (vagy új habit létrehozása)
-   - Dátum választás (DatePicker)
-   - Időpont beállítás (TimePicker - start, end)
-   - Duration automatikus számítás vagy manuális megadás
-   - Ismétlődés pattern (daily, weekdays, weekends, custom)
-   - Résztvevők hozzáadása (opcionális)
-   - Notes mező
-   - Mentés gomb -> API call -> vissza Home-ra
+1. **Add Habit Screen**
+   - Habit név input
+   - Leírás/motiváció (optional)
+   - Goal beállítás (pl. "10 alkalom 2 héten belül")
+   - Kategória választás (GET /habit/categories)
+   - Ikon preview a kategóriához
+   - Mentés gomb -> POST /habit -> vissza
+   - Validáció: név és kategória kötelező
 
-2. **Edit Schedule Screen** (később)
+**API-k (már készen vannak)**:
+- `HabitApiService.createHabit()` ✅
+- `HabitApiService.getCategories()` ✅
+- `HabitRepository.createHabit()` ✅
+- `HabitRepository.getCategories()` ✅
+
+**Következő utána:**
+
+2. **Edit Schedule Screen**
    - Schedule módosítása
    - Időpont és duration frissítése
    - Státusz váltás
    - Notes szerkesztése
 
-### Utána: Habit Management
-
-**Branch név**: `feature/habit-management`
-- Habit Categories lekérése
-- Add Habit Screen
-- Habit lista megjelenítése
-
-### Később: Progress & Profile
+### Utána: Progress & Profile
 
 - Progress tracking implementáció
 - Profile Screen
