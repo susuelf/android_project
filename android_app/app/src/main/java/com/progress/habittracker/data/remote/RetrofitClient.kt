@@ -20,11 +20,11 @@ object RetrofitClient {
      * Backend API alap URL
      * 
      * FONTOS: Ezt módosítsd a saját backend címedre!
-     * - Lokális fejlesztéshez: http://10.0.2.2:3000/ (Android emulator)
-     * - Fizikai eszközhöz: http://YOUR_LOCAL_IP:3000/
+     * - Lokális fejlesztéshez: http://10.0.2.2:8080/ (Android emulator, Docker)
+     * - Fizikai eszközhöz: http://YOUR_LOCAL_IP:8080/
      * - Production: https://your-backend-url.com/
      */
-    private const val BASE_URL = "http://10.0.2.2:3000/"
+    private const val BASE_URL = "http://10.0.2.2:8080/"
     
     /**
      * Gson instance - JSON <-> Kotlin object konverzióhoz
