@@ -1,6 +1,6 @@
 package com.progress.habittracker.data.remote
 
-import com.progress.habittracker.data.model.ScheduleResponseDto
+import com.progress.habittracker.data.model.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -101,4 +101,66 @@ interface ScheduleApiService {
         @Path("id") id: Int,
         @Header("Authorization") authorization: String
     ): Response<Unit>
+    
+    // ==================== CREATE SCHEDULE ENDPOINTS ====================
+    
+    /**
+     * Egyedi (egyszeri) schedule létrehozása
+     * 
+     * Backend endpoint: POST /schedule/custom
+     * 
+     * @param request CreateCustomScheduleRequest
+     * @param authorization Bearer token
+     * @return Response<ScheduleResponseDto> - Létrehozott schedule
+     * 
+     * Response kódok:
+     * - 201: Sikeres létrehozás
+     * - 401: Nincs authentikáció
+     * - 400: Hibás request body
+     */
+    @POST("schedule/custom")
+    suspend fun createCustomSchedule(
+        @Body request: CreateCustomScheduleRequest,
+        @Header("Authorization") authorization: String
+    ): Response<ScheduleResponseDto>
+    
+    /**
+     * Ismétlődő schedule-ok létrehozása (daily, weekdays, weekends)
+     * 
+     * Backend endpoint: POST /schedule/recurring
+     * 
+     * @param request CreateRecurringScheduleRequest
+     * @param authorization Bearer token
+     * @return Response<List<ScheduleResponseDto>> - Létrehozott schedule-ok listája
+     * 
+     * Response kódok:
+     * - 201: Sikeres létrehozás
+     * - 401: Nincs authentikáció
+     * - 400: Hibás request body
+     */
+    @POST("schedule/recurring")
+    suspend fun createRecurringSchedule(
+        @Body request: CreateRecurringScheduleRequest,
+        @Header("Authorization") authorization: String
+    ): Response<List<ScheduleResponseDto>>
+    
+    /**
+     * Ismétlődő schedule-ok létrehozása megadott napokra
+     * 
+     * Backend endpoint: POST /schedule/recurring/weekdays
+     * 
+     * @param request CreateWeekdayRecurringScheduleRequest
+     * @param authorization Bearer token
+     * @return Response<List<ScheduleResponseDto>> - Létrehozott schedule-ok listája
+     * 
+     * Response kódok:
+     * - 201: Sikeres létrehozás
+     * - 401: Nincs authentikáció
+     * - 400: Hibás request body
+     */
+    @POST("schedule/recurring/weekdays")
+    suspend fun createWeekdayRecurringSchedule(
+        @Body request: CreateWeekdayRecurringScheduleRequest,
+        @Header("Authorization") authorization: String
+    ): Response<List<ScheduleResponseDto>>
 }

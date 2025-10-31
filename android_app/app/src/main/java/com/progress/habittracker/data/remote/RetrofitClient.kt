@@ -103,8 +103,18 @@ object RetrofitClient {
         retrofit.create(ScheduleApiService::class.java)
     }
     
+    /**
+     * HabitApiService instance létrehozása
+     * 
+     * Habit-ekhez kapcsolatos API műveletek
+     * 
+     * @return HabitApiService implementáció
+     */
+    val habitApiService: HabitApiService by lazy {
+        retrofit.create(HabitApiService::class.java)
+    }
+    
     // TODO: Később hozzáadandó API szolgáltatások
-    // val habitApiService: HabitApiService by lazy { ... }
     // val progressApiService: ProgressApiService by lazy { ... }
     // val profileApiService: ProfileApiService by lazy { ... }
 }
