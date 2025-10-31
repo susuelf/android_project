@@ -1,94 +1,95 @@
 # Android UI Projekt - Állapot Jelentés
 
 **Dátum**: 2025-10-31  
-**Branch**: `feature/android-frontend-ui`  
-**Állapot**: ✅ Alap projekt létrehozva és feltöltve
+**Aktuális Branch**: `feature/api-integration`  
+**Állapot**: 🚧 API Integration folyamatban
 
 ---
 
 ## Elvégzett Munkák
 
-### 1. Projekt Inicializálás ✅
+### 1. Alap Projekt Setup ✅ (MERGED to main)
 
 - **Jetpack Compose alapú projekt** létrehozása
-- **Package név**: `com.progress.habittracker` (előtte: `com.example.android_app`)
-- **Alkalmazás név**: `Progr3SS` (előtte: `android_app`)
+- **Package név**: `com.progress.habittracker`
+- **Alkalmazás név**: `Progr3SS`
 - **Minimum SDK**: 24 (Android 7.0)
 - **Target SDK**: 36
+- Theme fájlok és MainActivity létrehozva kommentekkel
 
-### 2. Build Konfiguráció ✅
+### 2. API Integration - Authentikáció ✅ (feature/api-integration branch)
 
-#### `build.gradle.kts` (app szint)
-- Compose plugin hozzáadása
-- Build features: `compose = true`
-- Namespace frissítése: `com.progress.habittracker`
-- Application ID frissítése: `com.progress.habittracker`
+#### Függőségek hozzáadása ✅
+- **Retrofit 2.11.0** - REST API kliens
+- **OkHttp 4.12.0** - HTTP kliens és logging
+- **Gson 2.11.0** - JSON <-> Kotlin object konverzió
+- **DataStore Preferences 1.1.1** - Token biztonságos tárolása
+- **Coroutines 1.9.0** - Aszinkron műveletek
+- **Lifecycle & ViewModel** - State management
 
-#### `libs.versions.toml`
-Hozzáadott verziók:
-- `composeBom = "2024.12.01"`
-- `activityCompose = "1.10.0"`
-- `lifecycleRuntimeKtx = "2.9.0"`
+#### Permissions ✅
+- `INTERNET` - API kommunikációhoz
+- `ACCESS_NETWORK_STATE` - Hálózat állapot ellenőrzése
+- `usesCleartextTraffic="true"` - HTTP forgalom engedélyezése (development)
 
-Hozzáadott függőségek:
-- Compose BOM
-- Compose UI (ui, ui-graphics, ui-tooling, ui-tooling-preview)
-- Compose Material3
-- Activity Compose
-- Lifecycle Runtime KTX
-- Compose teszt függőségek (ui-test-junit4, ui-test-manifest)
+#### Data Layer ✅
 
-### 3. Projekt Struktúra ✅
+**Models (DTO-k)**:
+- `AuthModels.kt` - Összes authentikációs model
+  - `SignInRequest`, `SignUpRequest`, `ResetPasswordRequest`
+  - `AuthResponse`, `User`, `Tokens`
+  - `RefreshTokenResponse`, `GoogleSignInRequest`
 
+**API Services**:
+- `AuthApiService.kt` - Auth API végpontok interface
+  - `signIn()` - POST /auth/local/signin
+  - `signUp()` - POST /auth/local/signup
+  - `resetPassword()` - POST /auth/reset-password-via-email
+  - `googleSignIn()` - POST /auth/google
+  - `refreshToken()` - POST /auth/local/refresh
+  - `logout()` - POST /auth/local/logout
+
+**Network Configuration**:
+- `RetrofitClient.kt` - Retrofit konfiguráció
+  - BASE_URL: `http://10.0.2.2:3000/` (emulator)
+  - Logging interceptor
+  - Timeout beállítások (30s)
+  - Gson converter
+
+**Local Storage**:
+- `TokenManager.kt` - DataStore Preferences
+  - Token-ek tárolása (accessToken, refreshToken)
+  - Felhasználói adatok tárolása (userId, email, username)
+  - Flow-based API
+
+**Repository**:
+- `AuthRepository.kt` - Repository pattern
+  - Üzleti logika az API és local storage között
+  - Flow<Resource<T>> alapú API
+  - Automatikus token mentés login/register után
+
+**Utilities**:
+- `Resource.kt` - API válasz wrapper
+  - `Success`, `Error`, `Loading` állapotok
+
+#### Package Struktúra ✅
 ```
-android_app/
-├── app/
-│   └── src/
-│       └── main/
-│           └── java/com/progress/habittracker/
-│               ├── MainActivity.kt           # ✅ Kommentezett kóddal
-│               └── ui/
-│                   └── theme/
-│                       ├── Color.kt          # ✅ Kommentezett színpalétta
-│                       ├── Theme.kt          # ✅ Kommentezett téma konfiguráció
-│                       └── Type.kt           # ✅ Kommentezett tipográfia
+com.progress.habittracker/
+├── data/
+│   ├── local/
+│   │   └── TokenManager.kt
+│   ├── model/
+│   │   └── AuthModels.kt
+│   ├── remote/
+│   │   ├── AuthApiService.kt
+│   │   └── RetrofitClient.kt
+│   └── repository/
+│       └── AuthRepository.kt
+├── ui/
+│   └── theme/
+└── util/
+    └── Resource.kt
 ```
-
-### 4. Fő Komponensek ✅
-
-#### MainActivity.kt
-- `ComponentActivity` alapú
-- Edge-to-edge támogatás
-- Compose UI inicializálás
-- Egyszerű üdvözlő képernyő
-- **Magyar nyelvű kommentekkel ellátva**
-
-#### Theme Fájlok
-- **Color.kt**: Világos és sötét téma színei
-- **Theme.kt**: Material 3 téma konfiguráció, dinamikus színek támogatása
-- **Type.kt**: Tipográfiai beállítások
-- **Minden fájl kommentezett**
-
-### 5. Teszt Fájlok ✅
-
-- `ExampleInstrumentedTest.kt` - Frissítve az új package névvel
-- `ExampleUnitTest.kt` - Frissítve az új package névvel
-- Mindkét teszt kommentezett
-
-### 6. Dokumentáció ✅
-
-- `android_app/README.md` létrehozva
-  - Technológiai stack leírása
-  - Projekt struktúra
-  - Build és futtatási útmutatók
-  - Fejlesztési terv hivatkozása
-
-### 7. Git Műveletek ✅
-
-- Régi `com.example.android_app` package törölve
-- Új fájlok létrehozva és commitálva
-- Branch pushed: `feature/android-frontend-ui`
-- Commit üzenet: "feat: Alap Android UI projekt inicializalasa Jetpack Compose-zal"
 
 ---
 
@@ -109,76 +110,86 @@ android_app/
 
 ## Következő Lépések
 
-### 1. Main Branch-be való Merge
-A jelenlegi `feature/android-frontend-ui` branch készen áll a main-be mergelésre:
+### Jelenlegi Branch: feature/api-integration 🚧
 
-```bash
-# GitHub-on Pull Request létrehozása és merge
-# vagy helyi merge:
-git checkout main
-git merge feature/android-frontend-ui
-git push origin main
-```
+**Mi van még hátra ebben a branch-ben:**
+- ❌ Schedule API modellek és service
+- ❌ Habit API modellek és service  
+- ❌ Progress API modellek és service
+- ❌ Profile API modellek és service
+- ❌ Auth Interceptor (automatikus token hozzáadása minden kéréshez)
+- ❌ Egyszerű teszt az API működéséhez
 
-### 2. Feature Branch-ek Létrehozása
+**Javasolt folytatás:**
+1. Folytassuk az API Integration-t a többi model és service hozzáadásával
+2. Hozzunk létre egy Auth Interceptor-t
+3. Teszteljük az API-t egyszerű UI-val vagy Unit testekkel
+4. Commit és merge a main-be
 
-A PROJECT_SPECIFICATION.md alapján a következő funkciók várnak implementálásra:
+### Következő Branch-ek (sorrendben)
 
-#### A. Authentikáció (prioritás: MAGAS)
+#### 1. Navigation Setup (következő)
+Branch név: `feature/navigation-setup`
+- Navigation Compose beállítása
+- Screen routes definiálása
+- NavHost és NavController
+- Bottom Navigation Bar (opcionális ezen a ponton)
+
+#### 2. Authentication Screens  
 Branch név: `feature/auth-screens`
 - Splash Screen (auto-login check)
-- Login Screen
-- Register Screen  
+- Login Screen + ViewModel
+- Register Screen + ViewModel
 - Reset Password Screen (opcionális)
+- Google Sign-In integráció (opcionális)
 
-#### B. Navigáció (prioritás: MAGAS)
-Branch név: `feature/navigation-setup`
-- Navigation Component beállítása
-- Bottom Navigation Bar
-- Screen routes definiálása
-
-#### C. Home Screen (prioritás: MAGAS)
+#### 3. Home Screen
 Branch név: `feature/home-screen`
-- Napi schedules megjelenítése
-- Schedule lista
-- Status megjelenítés (completed/not completed)
+- Home Screen UI
+- Schedule lista megjelenítése
+- ViewModel + Repository integráció
+- Pull-to-refresh
+- Loading és Error állapotok
 
-#### D. Habit Management (prioritás: KÖZEPES)
-Branch név: `feature/habit-management`
-- Add Habit Screen
-- Habit lista
-- Category választás
-
-#### E. Schedule Management (prioritás: KÖZEPES)
-Branch név: `feature/schedule-management`
-- Create Schedule Screen
-- Edit Schedule Screen
-- Schedule Details Screen
-- Delete Schedule
-
-#### F. Progress Tracking (prioritás: KÖZEPES)
-Branch név: `feature/progress-tracking`
-- Add Progress
-- Progress lista
-- Progress bar vizualizáció
-
-#### G. Profile Management (prioritás: ALACSONY)
-Branch név: `feature/profile-management`
-- Profile Screen
-- Edit Profile Screen
-- Logout funkció
-
-#### H. API Integration (prioritás: KRITIKUS - minden feature-hez kell)
-Branch név: `feature/api-integration`
-- Retrofit setup
-- API service osztályok
-- Repository pattern
-- Token management
-- Error handling
+#### 4. További feature-ök
+- Schedule Management
+- Habit Management
+- Progress Tracking
+- Profile Management
 
 ---
 
 ## Fejlesztési Folyamat
+
+### Aktuális Branch Workflow
+
+**Mostani helyzet (feature/api-integration):**
+```bash
+# Jelenleg ezen a branchben vagyunk
+git branch  # * feature/api-integration
+
+# Folytatjuk a munkát...
+# ... kódolás ...
+
+# Commitolás
+git add .
+git commit -m "feat: További API modellek és services"
+
+# Push
+git push origin feature/api-integration
+
+# Merge a main-be (amikor kész)
+git checkout main
+git merge feature/api-integration
+git push origin main
+```
+
+**Új branch indítása:**
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/[új-feature-név]
+```
 
 ### Branch Workflow
 
@@ -216,6 +227,8 @@ Branch név: `feature/api-integration`
 - ✅ Repository pattern az API hívásokhoz
 - ✅ StateFlow/State management
 - ✅ Material 3 design guidelines követése
+- ✅ Resource<T> wrapper használata API válaszokhoz
+- ✅ Coroutines Flow-val aszinkron műveletekhez
 
 ---
 
