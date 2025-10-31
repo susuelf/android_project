@@ -25,10 +25,10 @@ object RetrofitClient {
      * - Fizikai Android eszközhöz: http://YOUR_LOCAL_IP:8080/
      * - Production: https://your-backend-url.com/
      * 
-     * MEGJEGYZÉS: A 10.0.2.2 NEM működik Docker Desktop-pal Windows-on,
-     * mert a Docker egy virtuális hálózatban fut. Használd a gép tényleges IP címét!
+     * MEGJEGYZÉS: A Windows-on a virtuális hálózat IP-je változhat.
+     * Jelenleg elérhető címek: 172.16.0.218, 26.11.53.146
      */
-    private const val BASE_URL = "http://192.168.197.132:8080/"
+    private const val BASE_URL = "http://172.16.0.218:8080/"
     
     /**
      * Gson instance - JSON <-> Kotlin object konverzióhoz
