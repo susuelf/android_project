@@ -7,6 +7,15 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+// Import-ok a PlaceholderScreen-hez
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+// Auth Screen import-ok
+import com.progress.habittracker.ui.screens.auth.SplashScreen
+import com.progress.habittracker.ui.screens.auth.LoginScreen
+import com.progress.habittracker.ui.screens.auth.RegisterScreen
 
 /**
  * NavGraph - Navigációs gráf definiálása
@@ -38,34 +47,16 @@ fun NavGraph(
          * - Átirányítás Login-ra vagy Home-ra
          */
         composable(route = Screen.Splash.route) {
-            // TODO: SplashScreen() composable hívása
-            // SplashScreen(navController = navController)
-            PlaceholderScreen(
-                screenName = "Splash Screen",
-                onNavigate = { navController.navigate(Screen.Login.route) }
-            )
+            SplashScreen(navController = navController)
         }
         
         /**
          * Login Screen
          * - Bejelentkezés email + jelszó
-         * - Navigáció: Register, ResetPassword, Home
+         * - Navigáció: Register, Home
          */
         composable(route = Screen.Login.route) {
-            // TODO: LoginScreen() composable hívása
-            // LoginScreen(
-            //     onNavigateToRegister = { navController.navigate(Screen.Register.route) },
-            //     onNavigateToResetPassword = { navController.navigate(Screen.ResetPassword.route) },
-            //     onNavigateToHome = { 
-            //         navController.navigate(Screen.Home.route) {
-            //             popUpTo(Screen.Login.route) { inclusive = true }
-            //         }
-            //     }
-            // )
-            PlaceholderScreen(
-                screenName = "Login Screen",
-                onNavigate = { navController.navigate(Screen.Home.route) }
-            )
+            LoginScreen(navController = navController)
         }
         
         /**
@@ -74,19 +65,7 @@ fun NavGraph(
          * - Navigáció: Login, Home
          */
         composable(route = Screen.Register.route) {
-            // TODO: RegisterScreen() composable hívása
-            // RegisterScreen(
-            //     onNavigateToLogin = { navController.popBackStack() },
-            //     onNavigateToHome = {
-            //         navController.navigate(Screen.Home.route) {
-            //             popUpTo(Screen.Register.route) { inclusive = true }
-            //         }
-            //     }
-            // )
-            PlaceholderScreen(
-                screenName = "Register Screen",
-                onNavigate = { navController.popBackStack() }
-            )
+            RegisterScreen(navController = navController)
         }
         
         /**
@@ -343,8 +322,3 @@ private fun PlaceholderScreen(
     }
 }
 
-// Import-ok a PlaceholderScreen-hez
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
