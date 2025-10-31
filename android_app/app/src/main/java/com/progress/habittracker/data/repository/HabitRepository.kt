@@ -29,30 +29,41 @@ class HabitRepository(
         emit(Resource.Loading())
         
         try {
+            android.util.Log.d("HabitRepository", "getHabits() kezdődik...")
+            
             val token = tokenManager.accessToken.first()
+            android.util.Log.d("HabitRepository", "Token: ${if (token.isNullOrEmpty()) "NINCS" else "van (${token.take(20)}...)"}")
+            
             if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
                 return@flow
             }
             
+            android.util.Log.d("HabitRepository", "API hívás indul: GET /habit")
             val response = habitApiService.getHabits("Bearer $token")
+            android.util.Log.d("HabitRepository", "API válasz: ${response.code()} - ${response.message()}")
             
             when {
                 response.isSuccessful && response.body() != null -> {
                     val habits = response.body()!!
+                    android.util.Log.d("HabitRepository", "Sikeres válasz: ${habits.size} habit")
                     emit(Resource.Success(habits))
                 }
                 response.code() == 401 -> {
+                    android.util.Log.e("HabitRepository", "401 Unauthorized")
                     emit(Resource.Error("Lejárt a session, kérlek jelentkezz be újra"))
                 }
                 response.code() == 404 -> {
+                    android.util.Log.w("HabitRepository", "404 Not Found - nincs habit")
                     emit(Resource.Success(emptyList())) // Nincs habit
                 }
                 else -> {
+                    android.util.Log.e("HabitRepository", "Hiba: ${response.code()} - ${response.errorBody()?.string()}")
                     emit(Resource.Error("Hiba történt: ${response.code()}"))
                 }
             }
         } catch (e: Exception) {
+            android.util.Log.e("HabitRepository", "Exception: ${e.message}", e)
             emit(Resource.Error(e.message ?: "Ismeretlen hiba"))
         }
     }

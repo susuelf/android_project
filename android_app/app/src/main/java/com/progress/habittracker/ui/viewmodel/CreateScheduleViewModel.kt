@@ -75,17 +75,25 @@ class CreateScheduleViewModel(
     fun loadHabits() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingHabits = true, error = null) }
+            
+            android.util.Log.d("CreateScheduleVM", "Habit-ek betöltése kezdődik...")
 
             habitRepository.getHabits().collect { resource ->
                 when (resource) {
                     is Resource.Loading -> {
+                        android.util.Log.d("CreateScheduleVM", "Habit-ek betöltése folyamatban...")
                         _uiState.update { it.copy(isLoadingHabits = true) }
                     }
 
                     is Resource.Success -> {
+                        val habits = resource.data ?: emptyList()
+                        android.util.Log.d("CreateScheduleVM", "Habit-ek betöltve: ${habits.size} db")
+                        habits.forEach { habit ->
+                            android.util.Log.d("CreateScheduleVM", "  - ${habit.name} (ID: ${habit.id})")
+                        }
                         _uiState.update {
                             it.copy(
-                                habits = resource.data ?: emptyList(),
+                                habits = habits,
                                 isLoadingHabits = false,
                                 error = null
                             )
@@ -93,6 +101,7 @@ class CreateScheduleViewModel(
                     }
 
                     is Resource.Error -> {
+                        android.util.Log.e("CreateScheduleVM", "Hiba a habit-ek betöltésekor: ${resource.message}")
                         _uiState.update {
                             it.copy(
                                 isLoadingHabits = false,
