@@ -118,7 +118,8 @@ private fun CreateScheduleContent(
                 habits = uiState.habits,
                 selectedHabit = uiState.selectedHabit,
                 isLoading = uiState.isLoadingHabits,
-                onHabitSelected = { viewModel.selectHabit(it) }
+                onHabitSelected = { viewModel.selectHabit(it) },
+                onAddNewHabit = { navController.navigate(com.progress.habittracker.navigation.Screen.AddHabit.route) }
             )
         }
 
@@ -158,7 +159,8 @@ private fun HabitSelectionSection(
     habits: List<HabitResponseDto>,
     selectedHabit: HabitResponseDto?,
     isLoading: Boolean,
-    onHabitSelected: (HabitResponseDto) -> Unit
+    onHabitSelected: (HabitResponseDto) -> Unit,
+    onAddNewHabit: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -168,11 +170,21 @@ private fun HabitSelectionSection(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = "Habit",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Habit",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                TextButton(onClick = onAddNewHabit) {
+                    Text("+ Új Habit")
+                }
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 

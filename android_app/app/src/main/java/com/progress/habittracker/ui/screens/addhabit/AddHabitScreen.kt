@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import com.progress.habittracker.data.local.TokenManager
 import com.progress.habittracker.data.model.HabitCategoryResponseDto
 import com.progress.habittracker.data.repository.HabitRepository
@@ -265,14 +265,9 @@ fun CategoryItem(
             verticalArrangement = Arrangement.Center
         ) {
             // Kategória ikon (ha van iconUrl)
-            category.iconUrl?.let { iconUrl ->
-                AsyncImage(
-                    model = iconUrl,
-                    contentDescription = category.name,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .padding(bottom = 8.dp)
-                )
+            val iconUrl = category.iconUrl
+            if (iconUrl != null) {
+                Icons.Default.Category
             }
 
             // Kategória név
