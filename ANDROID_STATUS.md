@@ -1,8 +1,8 @@
 # Android UI Projekt - Állapot Jelentés
 
 **Dátum**: 2025-10-31  
-**Aktuális Branch**: `feature/api-integration`  
-**Állapot**: 🚧 API Integration folyamatban
+**Aktuális Branch**: `feature/navigation-setup`  
+**Állapot**: ✅ Navigation Setup kész, Auth Screens következik
 
 ---
 
@@ -17,7 +17,7 @@
 - **Target SDK**: 36
 - Theme fájlok és MainActivity létrehozva kommentekkel
 
-### 2. API Integration - Authentikáció ✅ (feature/api-integration branch)
+### 2. API Integration - Authentikáció ✅ (PUSHED - feature/api-integration)
 
 #### Függőségek hozzáadása ✅
 - **Retrofit 2.11.0** - REST API kliens
@@ -91,6 +91,82 @@ com.progress.habittracker/
     └── Resource.kt
 ```
 
+### 3. Navigation Setup ✅ (PUSHED - feature/navigation-setup)
+
+#### Függőségek ✅
+- **Navigation Compose 2.8.5** - Jetpack Navigation for Compose
+
+#### Navigation Komponensek ✅
+
+**Screen Routes**:
+- `Screen.kt` - Sealed class az összes screen route-tal
+  - **Auth Screens**: Splash, Login, Register, ResetPassword
+  - **Main Screens**: Home (Dashboard), CreateSchedule
+  - **Schedule Screens**: ScheduleDetails, EditSchedule (parametrized)
+  - **Habit & Progress**: AddHabit, AddProgress (parametrized)
+  - **Profile Screens**: Profile, EditProfile
+  - Type-safe route creation: `createRoute(id)` funkciók
+  - Helper function: `getScheduleIdFromRoute()`
+
+**Navigation Graph**:
+- `NavGraph.kt` - Teljes navigációs gráf
+  - NavHost konfiguráció
+  - Összes screen route beállítása
+  - Paraméter kezelés (scheduleId: Int)
+  - Placeholder screens teszteléshez
+  - TODO kommentek az igazi screen implementációkhoz
+  - Back stack management (popUpTo)
+
+**MainActivity Integration**:
+- NavController inicializálás (`rememberNavController`)
+- NavGraph integráció
+- Scaffold + innerPadding kezelés
+
+#### Navigációs Flow (Backend spec alapján) ✅
+
+```
+Splash Screen (auto-login check)
+    ├─> Login Screen
+    │   ├─> Register Screen
+    │   ├─> Reset Password Screen
+    │   └─> Home Screen (successful login)
+    │
+    └─> Home Screen (auto-login success)
+        ├─> Schedule Details Screen (tap on schedule)
+        │   ├─> Edit Schedule Screen
+        │   ├─> Add Progress Screen
+        │   └─> Delete (back to Home)
+        │
+        ├─> Create Schedule Screen (FAB)
+        │   └─> Add Habit Screen
+        │
+        └─> Profile Screen
+            ├─> Edit Profile Screen
+            └─> Logout -> Login Screen
+```
+
+#### Package Struktúra (frissítve) ✅
+```
+com.progress.habittracker/
+├── data/
+│   ├── local/
+│   │   └── TokenManager.kt
+│   ├── model/
+│   │   └── AuthModels.kt
+│   ├── remote/
+│   │   ├── AuthApiService.kt
+│   │   └── RetrofitClient.kt
+│   └── repository/
+│       └── AuthRepository.kt
+├── navigation/              # ✨ ÚJ
+│   ├── Screen.kt
+│   └── NavGraph.kt
+├── ui/
+│   └── theme/
+└── util/
+    └── Resource.kt
+```
+
 ---
 
 ## Technológiai Stack
@@ -110,52 +186,59 @@ com.progress.habittracker/
 
 ## Következő Lépések
 
-### Jelenlegi Branch: feature/api-integration 🚧
+### ✅ Navigation Setup - KÉSZ!
 
-**Mi van még hátra ebben a branch-ben:**
-- ❌ Schedule API modellek és service
-- ❌ Habit API modellek és service  
-- ❌ Progress API modellek és service
-- ❌ Profile API modellek és service
-- ❌ Auth Interceptor (automatikus token hozzáadása minden kéréshez)
-- ❌ Egyszerű teszt az API működéséhez
+Az alkalmazás navigációs struktúrája készen áll. Minden screen route definiálva van, a NavGraph össze van rakva placeholder screen-ekkel, és a MainActivity is be van állítva.
 
-**Javasolt folytatás:**
-1. Folytassuk az API Integration-t a többi model és service hozzáadásával
-2. Hozzunk létre egy Auth Interceptor-t
-3. Teszteljük az API-t egyszerű UI-val vagy Unit testekkel
-4. Commit és merge a main-be
+### 🎯 Most: Authentication Screens (Login, Register, Splash)
 
-### Következő Branch-ek (sorrendben)
+**Branch név**: `feature/auth-screens`
 
-#### 1. Navigation Setup (következő)
-Branch név: `feature/navigation-setup`
-- Navigation Compose beállítása
-- Screen routes definiálása
-- NavHost és NavController
-- Bottom Navigation Bar (opcionális ezen a ponton)
+**Elkészítendő komponensek:**
+1. **Splash Screen** 
+   - Auto-login ellenőrzés TokenManager-rel
+   - Átirányítás Home-ra vagy Login-ra
+   - Loading animation
 
-#### 2. Authentication Screens  
-Branch név: `feature/auth-screens`
-- Splash Screen (auto-login check)
-- Login Screen + ViewModel
-- Register Screen + ViewModel
-- Reset Password Screen (opcionális)
-- Google Sign-In integráció (opcionális)
+2. **Login Screen**
+   - Email + Password input mezők
+   - Login gomb -> AuthRepository.signIn()
+   - "Forgot password?" link
+   - "Don't have an account?" link
+   - Error handling és Loading state
 
-#### 3. Home Screen
-Branch név: `feature/home-screen`
-- Home Screen UI
-- Schedule lista megjelenítése
-- ViewModel + Repository integráció
-- Pull-to-refresh
-- Loading és Error állapotok
+3. **Register Screen**
+   - Username, Email, Password, Confirm Password mezők
+   - Password matching validáció
+   - Register gomb -> AuthRepository.signUp()
+   - "Already have an account?" link
+   - Error handling és Loading state
 
-#### 4. További feature-ök
-- Schedule Management
-- Habit Management
-- Progress Tracking
-- Profile Management
+4. **Reset Password Screen (opcionális)**
+   - Email input mező
+   - Send gomb -> AuthRepository.resetPassword()
+   - Success message
+   - Back to Login link
+
+**ViewModels:**
+- `AuthViewModel` - Auth state management
+  - Login, Register, Reset Password logika
+  - UI state (loading, error, success)
+  - Form validation
+
+**Miért ez a következő?**
+- ✅ API Integration kész (Auth)
+- ✅ Navigation kész
+- ❌ Még nincs UI
+- **Login/Register kell először** - nélküle nem lehet tesztelni a többi screen-t!
+
+### Utána: Home Screen
+
+**Branch név**: `feature/home-screen`  
+Az Authentication Screens után készítjük el a Home Screen-t, ami:
+- Lekéri a napi schedule-okat
+- Megjeleníti őket listában
+- State management ViewModel-lel
 
 ---
 
