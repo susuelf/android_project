@@ -20,11 +20,15 @@ object RetrofitClient {
      * Backend API alap URL
      * 
      * FONTOS: Ezt módosítsd a saját backend címedre!
-     * - Lokális fejlesztéshez: http://10.0.2.2:8080/ (Android emulator, Docker)
-     * - Fizikai eszközhöz: http://YOUR_LOCAL_IP:8080/
+     * - Android emulatorhoz Docker backend: használd a számítógép IP címét (WiFi/Ethernet)
+     *   Példa: http://192.168.1.100:8080/ (cseréld le a saját IP-dre!)
+     * - Fizikai Android eszközhöz: http://YOUR_LOCAL_IP:8080/
      * - Production: https://your-backend-url.com/
+     * 
+     * MEGJEGYZÉS: A 10.0.2.2 NEM működik Docker Desktop-pal Windows-on,
+     * mert a Docker egy virtuális hálózatban fut. Használd a gép tényleges IP címét!
      */
-    private const val BASE_URL = "http://10.0.2.2:8080/"
+    private const val BASE_URL = "http://192.168.197.132:8080/"
     
     /**
      * Gson instance - JSON <-> Kotlin object konverzióhoz
