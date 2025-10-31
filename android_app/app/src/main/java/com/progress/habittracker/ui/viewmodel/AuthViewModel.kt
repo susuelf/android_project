@@ -2,6 +2,7 @@ package com.progress.habittracker.ui.viewmodel
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.progress.habittracker.data.local.TokenManager
 import com.progress.habittracker.data.model.AuthResponse
@@ -19,16 +20,13 @@ import kotlinx.coroutines.launch
  * Ez a ViewModel kezeli az összes authentikációval kapcsolatos UI state-et és üzleti logikát.
  * MVVM pattern szerint kommunikál az AuthRepository-val.
  * 
- * @param context Alkalmazás kontextus (TokenManager inicializálásához)
+ * @param authRepository Auth repository példány
+ * @param tokenManager Token manager példány
  */
-class AuthViewModel(context: Context) : ViewModel() {
-    
-    // Repository és TokenManager inicializálása
-    private val tokenManager = TokenManager(context)
-    private val authRepository = AuthRepository(
-        authApiService = RetrofitClient.authApiService,
-        tokenManager = tokenManager
-    )
+class AuthViewModel(
+    private val authRepository: AuthRepository,
+    private val tokenManager: TokenManager
+) : ViewModel() {
     
     // ==================== STATE MANAGEMENT ====================
     
@@ -175,5 +173,28 @@ class AuthViewModel(context: Context) : ViewModel() {
      */
     fun resetState() {
         _authState.value = AuthState.Idle
+    }
+}
+
+/**
+ * AuthViewModelFactory - Factory az AuthViewModel példányosításához
+ * 
+ * Mivel az AuthViewModel paraméteres konstruktort használ,
+ * szükség van egy Factory-ra a ViewModel létrehozásához.
+ * 
+ * @param context Alkalmazás kontextus
+ */
+class AuthViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
+            val tokenManager = TokenManager(context)
+            val authRepository = AuthRepository(
+                authApiService = RetrofitClient.authApiService,
+                tokenManager = tokenManager
+            )
+            @Suppress("UNCHECKED_CAST")
+            return AuthViewModel(authRepository, tokenManager) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

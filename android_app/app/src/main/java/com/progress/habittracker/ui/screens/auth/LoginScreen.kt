@@ -22,11 +22,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.progress.habittracker.navigation.Screen
 import com.progress.habittracker.ui.theme.Progr3SSTheme
 import com.progress.habittracker.ui.viewmodel.AuthViewModel
+import com.progress.habittracker.ui.viewmodel.AuthViewModelFactory
 
 /**
  * LoginScreen - Bejelentkezési képernyő
@@ -49,7 +51,9 @@ import com.progress.habittracker.ui.viewmodel.AuthViewModel
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: AuthViewModel = AuthViewModel(LocalContext.current)
+    viewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory(LocalContext.current)
+    )
 ) {
     // State-ek a beviteli mezőkhöz
     var email by remember { mutableStateOf("") }
