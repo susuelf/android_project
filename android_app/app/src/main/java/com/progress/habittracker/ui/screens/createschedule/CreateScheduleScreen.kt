@@ -2,14 +2,17 @@ package com.progress.habittracker.ui.screens.createschedule
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -119,7 +122,8 @@ private fun CreateScheduleContent(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Habit Selection Section
@@ -257,6 +261,8 @@ private fun TimeSection(
     onStartTimeChange: (LocalTime) -> Unit,
     onDurationChange: (Int?) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -271,13 +277,31 @@ private fun TimeSection(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Start Time Display
-            Text(
-                text = "Kezdés: ${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))}",
-                style = MaterialTheme.typography.bodyLarge
-            )
+            // Start Time Picker
+            OutlinedButton(
+                onClick = {
+                    android.app.TimePickerDialog(
+                        context,
+                        { _, hour, minute ->
+                            onStartTimeChange(LocalTime.of(hour, minute))
+                        },
+                        startTime.hour,
+                        startTime.minute,
+                        true // 24-hour format
+                    ).show()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Kezdés: ${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))}")
+            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Duration Input
             var durationText by remember { mutableStateOf(duration?.toString() ?: "30") }
@@ -288,6 +312,7 @@ private fun TimeSection(
                     it.toIntOrNull()?.let { minutes -> onDurationChange(minutes) }
                 },
                 label = { Text("Időtartam (perc)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
         }
