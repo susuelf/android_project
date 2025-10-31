@@ -200,3 +200,146 @@ data class ScheduleResponseDto(
     @SerializedName("createdAt")
     val createdAt: String
 )
+
+// ==================== CREATE SCHEDULE REQUEST DTOs ====================
+
+/**
+ * Repeat Pattern - Schedule ismétlődési minta
+ */
+enum class RepeatPattern {
+    @SerializedName("none")
+    None,
+    
+    @SerializedName("daily")
+    Daily,
+    
+    @SerializedName("weekdays")
+    Weekdays,
+    
+    @SerializedName("weekends")
+    Weekends
+}
+
+/**
+ * Create Custom Schedule Request
+ * 
+ * Egyedi (egyszeri) schedule létrehozása
+ * 
+ * @property habitId Habit azonosító
+ * @property date Dátum (YYYY-MM-DD)
+ * @property startTime Kezdési időpont (HH:mm:ss)
+ * @property endTime Befejezési időpont (HH:mm:ss, opcionális)
+ * @property durationMinutes Időtartam percben (opcionális)
+ * @property isCustom Egyedi schedule-e (default: true)
+ * @property participantIds Résztvevők ID-i (opcionális)
+ * @property notes Jegyzetek (opcionális)
+ */
+data class CreateCustomScheduleRequest(
+    @SerializedName("habitId")
+    val habitId: Int,
+    
+    @SerializedName("date")
+    val date: String, // YYYY-MM-DD
+    
+    @SerializedName("start_time")
+    val startTime: String, // HH:mm:ss
+    
+    @SerializedName("end_time")
+    val endTime: String? = null,
+    
+    @SerializedName("duration_minutes")
+    val durationMinutes: Int? = null,
+    
+    @SerializedName("is_custom")
+    val isCustom: Boolean = true,
+    
+    @SerializedName("participantIds")
+    val participantIds: List<Int>? = null,
+    
+    @SerializedName("notes")
+    val notes: String? = null
+)
+
+/**
+ * Create Recurring Schedule Request
+ * 
+ * Ismétlődő schedule létrehozása (daily, weekdays, weekends)
+ * 
+ * @property habitId Habit azonosító
+ * @property startTime Kezdési időpont (HH:mm:ss)
+ * @property repeatPattern Ismétlődési minta (none, daily, weekdays, weekends)
+ * @property endTime Befejezési időpont (HH:mm:ss, opcionális)
+ * @property durationMinutes Időtartam percben (opcionális)
+ * @property repeatDays Hány napra ismétlődjön (default: 30)
+ * @property isCustom Egyedi schedule-e (default: true)
+ * @property participantIds Résztvevők ID-i (opcionális)
+ * @property notes Jegyzetek (opcionális)
+ */
+data class CreateRecurringScheduleRequest(
+    @SerializedName("habitId")
+    val habitId: Int,
+    
+    @SerializedName("start_time")
+    val startTime: String, // HH:mm:ss
+    
+    @SerializedName("repeatPattern")
+    val repeatPattern: RepeatPattern = RepeatPattern.None,
+    
+    @SerializedName("end_time")
+    val endTime: String? = null,
+    
+    @SerializedName("duration_minutes")
+    val durationMinutes: Int? = null,
+    
+    @SerializedName("repeatDays")
+    val repeatDays: Int = 30,
+    
+    @SerializedName("is_custom")
+    val isCustom: Boolean = true,
+    
+    @SerializedName("participantIds")
+    val participantIds: List<Int>? = null,
+    
+    @SerializedName("notes")
+    val notes: String? = null
+)
+
+/**
+ * Create Weekday Recurring Schedule Request
+ * 
+ * Ismétlődő schedule létrehozása megadott napokra
+ * 
+ * @property habitId Habit azonosító
+ * @property startTime Kezdési időpont (HH:mm:ss)
+ * @property daysOfWeek Hét napjai (1=Monday ... 7=Sunday)
+ * @property numberOfWeeks Hány hétre (default: 4)
+ * @property endTime Befejezési időpont (HH:mm:ss, opcionális)
+ * @property durationMinutes Időtartam percben (opcionális)
+ * @property participantIds Résztvevők ID-i (opcionális)
+ * @property notes Jegyzetek (opcionális)
+ */
+data class CreateWeekdayRecurringScheduleRequest(
+    @SerializedName("habitId")
+    val habitId: Int,
+    
+    @SerializedName("start_time")
+    val startTime: String, // HH:mm:ss
+    
+    @SerializedName("daysOfWeek")
+    val daysOfWeek: List<Int>, // 1=Monday, 7=Sunday
+    
+    @SerializedName("numberOfWeeks")
+    val numberOfWeeks: Int = 4,
+    
+    @SerializedName("end_time")
+    val endTime: String? = null,
+    
+    @SerializedName("duration_minutes")
+    val durationMinutes: Int? = null,
+    
+    @SerializedName("participantIds")
+    val participantIds: List<Int>? = null,
+    
+    @SerializedName("notes")
+    val notes: String? = null
+)

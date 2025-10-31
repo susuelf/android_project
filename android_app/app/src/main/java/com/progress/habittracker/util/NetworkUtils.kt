@@ -10,25 +10,25 @@ import java.net.NetworkInterface
 
 /**
  * NetworkUtils - Hálózati segédfüggvények
- * 
+ *
  * Funkciók:
  * - Gateway IP cím automatikus felismerése
  * - Backend URL generálása futásidőben
  * - Hálózati kapcsolat ellenőrzése
  */
 object NetworkUtils {
-    
+
     private const val TAG = "NetworkUtils"
     private const val BACKEND_PORT = 8080
-    
+
     /**
      * Backend base URL lekérése dinamikusan
-     * 
+     *
      * Stratégia:
      * 1. Először megpróbálja a WiFi gateway IP-t használni
      * 2. Ha nincs WiFi, akkor a mobilnet gateway IP-t
      * 3. Ha egyik sem működik, visszaad egy fallback címet
-     * 
+     *
      * @param context Android Context
      * @return Backend base URL (pl. "http://192.168.1.100:8080/")
      */
@@ -40,7 +40,7 @@ object NetworkUtils {
             Log.d(TAG, "WiFi Gateway IP detected: $url")
             return url
         }
-        
+
         // 2. Ha nincs WiFi, próbáljuk meg a device IP alapján kitalálni
         val deviceIp = getDeviceIpAddress()
         if (deviceIp != null) {
@@ -50,19 +50,19 @@ object NetworkUtils {
             Log.d(TAG, "Gateway IP guessed from device IP: $url")
             return url
         }
-        
+
         // 3. Fallback - emulator esetén 10.0.2.2
         val fallbackUrl = "http://10.0.2.2:$BACKEND_PORT/"
         Log.w(TAG, "Using fallback URL: $fallbackUrl")
         return fallbackUrl
     }
-    
+
     /**
      * WiFi gateway IP cím lekérése
-     * 
+     *
      * A DHCP gateway címét kéri le a WifiManager-ből.
      * Ez általában a router IP címe (pl. 192.168.1.1, 172.16.201.1)
-     * 
+     *
      * @param context Android Context
      * @return Gateway IP cím vagy null
      */
@@ -70,11 +70,11 @@ object NetworkUtils {
         return try {
             val wifiManager = context.applicationContext
                 .getSystemService(Context.WIFI_SERVICE) as? WifiManager
-            
+
             if (wifiManager?.isWifiEnabled == true) {
                 val dhcpInfo = wifiManager.dhcpInfo
                 val gateway = dhcpInfo.gateway
-                
+
                 if (gateway != 0) {
                     // Int to IP string conversion
                     val gatewayIp = String.format(
@@ -84,7 +84,7 @@ object NetworkUtils {
                         gateway shr 16 and 0xff,
                         gateway shr 24 and 0xff
                     )
-                    
+
                     // Ellenőrizzük, hogy valid IP-e
                     if (gatewayIp != "0.0.0.0") {
                         return gatewayIp
@@ -97,12 +97,12 @@ object NetworkUtils {
             null
         }
     }
-    
+
     /**
      * Device saját IP címének lekérése
-     * 
+     *
      * A device WiFi vagy mobilnet IP címét kéri le.
-     * 
+     *
      * @return Device IP cím vagy null
      */
     private fun getDeviceIpAddress(): String? {
@@ -111,10 +111,10 @@ object NetworkUtils {
             while (interfaces.hasMoreElements()) {
                 val networkInterface = interfaces.nextElement()
                 val addresses = networkInterface.inetAddresses
-                
+
                 while (addresses.hasMoreElements()) {
                     val address = addresses.nextElement()
-                    
+
                     // Csak IPv4 címeket nézünk, és kizárjuk a loopback-et
                     if (!address.isLoopbackAddress && address is Inet4Address) {
                         return address.hostAddress
@@ -126,14 +126,14 @@ object NetworkUtils {
         }
         return null
     }
-    
+
     /**
      * Gateway IP cím kitalálása a device IP alapján
-     * 
+     *
      * Ha a device IP-je 172.16.0.218, akkor a gateway valószínűleg:
      * - 172.16.0.1 vagy
      * - 172.16.201.1 (WSL/Docker esetén)
-     * 
+     *
      * @param deviceIp Device IP cím
      * @return Gateway IP cím becslés
      */
@@ -145,20 +145,20 @@ object NetworkUtils {
         }
         return deviceIp // Fallback: használjuk magát a device IP-t
     }
-    
+
     /**
      * Hálózati kapcsolat ellenőrzése
-     * 
+     *
      * @param context Android Context
      * @return true ha van internet kapcsolat
      */
     fun isNetworkAvailable(context: Context): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) 
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE)
             as? ConnectivityManager ?: return false
-        
+
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-        
+
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }

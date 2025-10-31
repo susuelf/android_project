@@ -16,22 +16,27 @@ import java.util.concurrent.TimeUnit
  * Ez az object felelős a Retrofit instance létrehozásáért és konfigurálásáért.
  * Singleton pattern-t használunk, hogy csak egy instance legyen.
  * 
- * ⚠️ FONTOS: Az initialize() metódust kell hívni az Application onCreate()-ben!
+ * FONTOS: Az initialize(context) metódust meg kell hívni az Application onCreate()-ben,
+ * hogy a dinamikus IP felismerés működjön!
  */
 object RetrofitClient {
     
     /**
-     * Backend API alap URL
+     * Backend API alap URL - Dinamikusan generálva
      * 
-     * Ez a változó dinamikusan kerül beállításra az initialize() metódusban.
-     * Automatikusan detektálja a WiFi gateway IP címét, így nem kell kézzel frissíteni.
+     * A NetworkUtils automatikusan megtalálja a gateway IP címet:
+     * - WiFi DHCP gateway lekérése
+     * - Fallback: device IP alapján becslés
+     * - Fallback: emulator default (10.0.2.2)
      */
-    private var baseUrl: String = "http://10.0.2.2:8080/" // Fallback URL
+    private var baseUrl: String = "http://10.0.2.2:8080/" // Default fallback
     
     /**
-     * Inicializálás - FONTOS: Hívd meg az Application onCreate()-ben!
+     * Inicializálás - Android Context szükséges a dinamikus IP felismeréshez
      * 
-     * @param context Application Context
+     * FONTOS: Ezt meg kell hívni az Application osztály onCreate() metódusában!
+     * 
+     * @param context Application context
      */
     fun initialize(context: Context) {
         baseUrl = NetworkUtils.getBackendBaseUrl(context)
@@ -79,7 +84,7 @@ object RetrofitClient {
     /**
      * Retrofit instance
      * 
-     * - BASE_URL beállítása (dinamikusan az initialize()-ből)
+     * - baseUrl használata (dinamikusan generált)
      * - OkHttpClient használata
      * - Gson converter használata JSON kezeléshez
      */
@@ -111,8 +116,18 @@ object RetrofitClient {
         retrofit.create(ScheduleApiService::class.java)
     }
     
+    /**
+     * HabitApiService instance létrehozása
+     * 
+     * Habit-ekhez kapcsolatos API műveletek
+     * 
+     * @return HabitApiService implementáció
+     */
+    val habitApiService: HabitApiService by lazy {
+        retrofit.create(HabitApiService::class.java)
+    }
+    
     // TODO: Később hozzáadandó API szolgáltatások
-    // val habitApiService: HabitApiService by lazy { ... }
     // val progressApiService: ProgressApiService by lazy { ... }
     // val profileApiService: ProfileApiService by lazy { ... }
 }

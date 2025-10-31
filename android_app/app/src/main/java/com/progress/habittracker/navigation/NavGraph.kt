@@ -18,8 +18,8 @@ import com.progress.habittracker.ui.screens.auth.LoginScreen
 import com.progress.habittracker.ui.screens.auth.RegisterScreen
 // Home Screen import
 import com.progress.habittracker.ui.screens.home.HomeScreen
-// Schedule Details Screen import
-import com.progress.habittracker.ui.screens.scheduledetails.ScheduleDetailsScreen
+// Create Schedule Screen import
+import com.progress.habittracker.ui.screens.createschedule.CreateScheduleScreen
 
 /**
  * NavGraph - Navigációs gráf definiálása
@@ -102,19 +102,11 @@ fun NavGraph(
         /**
          * Create Schedule Screen
          * - Új schedule létrehozása
-         * - Navigáció: AddHabit, vissza Home-ra
+         * - Navigáció: vissza Home-ra
          */
         composable(route = Screen.CreateSchedule.route) {
-            // TODO: CreateScheduleScreen() composable hívása
-            // CreateScheduleScreen(
-            //     onNavigateToAddHabit = {
-            //         navController.navigate(Screen.AddHabit.route)
-            //     },
-            //     onNavigateBack = { navController.popBackStack() }
-            // )
-            PlaceholderScreen(
-                screenName = "Create Schedule Screen",
-                onNavigate = { navController.popBackStack() }
+            CreateScheduleScreen(
+                navController = navController
             )
         }
         
@@ -137,9 +129,21 @@ fun NavGraph(
         ) { backStackEntry ->
             val scheduleId = backStackEntry.arguments?.getInt("scheduleId") ?: 0
             
-            ScheduleDetailsScreen(
-                navController = navController,
-                scheduleId = scheduleId
+            // TODO: ScheduleDetailsScreen() composable hívása
+            // ScheduleDetailsScreen(
+            //     scheduleId = scheduleId,
+            //     onNavigateToEdit = { id ->
+            //         navController.navigate(Screen.EditSchedule.createRoute(id))
+            //     },
+            //     onNavigateToAddProgress = { id ->
+            //         navController.navigate(Screen.AddProgress.createRoute(id))
+            //     },
+            //     onNavigateBack = { navController.popBackStack() },
+            //     onDeleteSuccess = { navController.popBackStack() }
+            // )
+            PlaceholderScreen(
+                screenName = "Schedule Details Screen (ID: $scheduleId)",
+                onNavigate = { navController.popBackStack() }
             )
         }
         
