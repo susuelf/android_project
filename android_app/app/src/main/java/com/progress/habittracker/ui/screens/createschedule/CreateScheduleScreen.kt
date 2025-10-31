@@ -51,6 +51,14 @@ fun CreateScheduleScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Habit lista újratöltése amikor visszanavigálunk az AddHabit-ból
+    // NavBackStackEntry-t figyeljük, hogy tudjuk mikor jövünk vissza
+    val navBackStackEntry = navController.currentBackStackEntry
+    LaunchedEffect(navBackStackEntry) {
+        // Amikor visszajövünk erre a screen-re, frissítsük a habit listát
+        viewModel.loadHabits()
+    }
+
     // Ha sikeres a létrehozás, navigáljunk vissza
     LaunchedEffect(uiState.createSuccess) {
         if (uiState.createSuccess) {
@@ -95,6 +103,7 @@ fun CreateScheduleScreen(
         CreateScheduleContent(
             uiState = uiState,
             viewModel = viewModel,
+            navController = navController,
             modifier = Modifier.padding(paddingValues)
         )
     }
@@ -104,6 +113,7 @@ fun CreateScheduleScreen(
 private fun CreateScheduleContent(
     uiState: CreateScheduleViewModel.CreateScheduleUiState,
     viewModel: CreateScheduleViewModel,
+    navController: NavController,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
