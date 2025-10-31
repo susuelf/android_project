@@ -10,82 +10,71 @@ import kotlinx.coroutines.flow.flow
 
 /**
  * Habit Repository
- * 
+ *
  * Repository pattern implementáció a habit műveletekhez.
  * Kezeli az API hívásokat és a token management-et.
  */
 class HabitRepository(
     private val tokenManager: TokenManager
 ) {
-    
+
     private val habitApiService = RetrofitClient.habitApiService
-    
+
     /**
      * Összes habit lekérése
-     * 
+     *
      * @return Flow<Resource<List<HabitResponseDto>>>
      */
     fun getHabits(): Flow<Resource<List<HabitResponseDto>>> = flow {
         emit(Resource.Loading())
-        
+
         try {
-            android.util.Log.d("HabitRepository", "getHabits() kezdődik...")
-            
             val token = tokenManager.accessToken.first()
-            android.util.Log.d("HabitRepository", "Token: ${if (token.isNullOrEmpty()) "NINCS" else "van (${token.take(20)}...)"}")
-            
             if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
                 return@flow
             }
-            
-            android.util.Log.d("HabitRepository", "API hívás indul: GET /habit")
+
             val response = habitApiService.getHabits("Bearer $token")
-            android.util.Log.d("HabitRepository", "API válasz: ${response.code()} - ${response.message()}")
-            
+
             when {
                 response.isSuccessful && response.body() != null -> {
                     val habits = response.body()!!
-                    android.util.Log.d("HabitRepository", "Sikeres válasz: ${habits.size} habit")
                     emit(Resource.Success(habits))
                 }
                 response.code() == 401 -> {
-                    android.util.Log.e("HabitRepository", "401 Unauthorized")
                     emit(Resource.Error("Lejárt a session, kérlek jelentkezz be újra"))
                 }
                 response.code() == 404 -> {
-                    android.util.Log.w("HabitRepository", "404 Not Found - nincs habit")
                     emit(Resource.Success(emptyList())) // Nincs habit
                 }
                 else -> {
-                    android.util.Log.e("HabitRepository", "Hiba: ${response.code()} - ${response.errorBody()?.string()}")
                     emit(Resource.Error("Hiba történt: ${response.code()}"))
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("HabitRepository", "Exception: ${e.message}", e)
             emit(Resource.Error(e.message ?: "Ismeretlen hiba"))
         }
     }
-    
+
     /**
      * Új habit létrehozása
-     * 
+     *
      * @param request CreateHabitRequest
      * @return Flow<Resource<HabitResponseDto>>
      */
     fun createHabit(request: CreateHabitRequest): Flow<Resource<HabitResponseDto>> = flow {
         emit(Resource.Loading())
-        
+
         try {
             val token = tokenManager.accessToken.first()
             if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
                 return@flow
             }
-            
+
             val response = habitApiService.createHabit("Bearer $token", request)
-            
+
             when {
                 response.isSuccessful && response.body() != null -> {
                     emit(Resource.Success(response.body()!!))
@@ -104,24 +93,24 @@ class HabitRepository(
             emit(Resource.Error(e.message ?: "Ismeretlen hiba"))
         }
     }
-    
+
     /**
      * Habit kategóriák lekérése
-     * 
+     *
      * @return Flow<Resource<List<HabitCategoryResponseDto>>>
      */
     fun getCategories(): Flow<Resource<List<HabitCategoryResponseDto>>> = flow {
         emit(Resource.Loading())
-        
+
         try {
             val token = tokenManager.accessToken.first()
             if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
                 return@flow
             }
-            
+
             val response = habitApiService.getCategories("Bearer $token")
-            
+
             when {
                 response.isSuccessful && response.body() != null -> {
                     emit(Resource.Success(response.body()!!))
@@ -138,3 +127,4 @@ class HabitRepository(
         }
     }
 }
+

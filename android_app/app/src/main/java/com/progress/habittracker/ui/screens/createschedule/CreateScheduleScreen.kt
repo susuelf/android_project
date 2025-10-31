@@ -2,7 +2,6 @@ package com.progress.habittracker.ui.screens.createschedule
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -34,6 +33,7 @@ import java.time.format.DateTimeFormatter
  * - Duration
  * - Notes
  */
+@Suppress("NewApi") // Java Time API is available via desugaring
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateScheduleScreen(
@@ -180,24 +180,6 @@ private fun HabitSelectionSection(
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
-            } else if (habits.isEmpty()) {
-                // Debug: Üres habit lista
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Nincs elérhető habit",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Hozz létre habit-eket a backend-en",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             } else {
                 ExposedDropdownMenuBox(
                     expanded = expanded,
@@ -209,7 +191,7 @@ private fun HabitSelectionSection(
                         readOnly = true,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(),
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable),
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                     )
@@ -226,13 +208,11 @@ private fun HabitSelectionSection(
                                             text = habit.name,
                                             style = MaterialTheme.typography.bodyLarge
                                         )
-                                        habit.category?.let { category ->
-                                            Text(
-                                                text = category.name ?: "",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
+                                        Text(
+                                            text = habit.category.name,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
                                 },
                                 onClick = {
