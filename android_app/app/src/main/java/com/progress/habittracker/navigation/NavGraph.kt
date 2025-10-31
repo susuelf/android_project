@@ -18,6 +18,8 @@ import com.progress.habittracker.ui.screens.auth.LoginScreen
 import com.progress.habittracker.ui.screens.auth.RegisterScreen
 // Home Screen import
 import com.progress.habittracker.ui.screens.home.HomeScreen
+// Create Schedule Screen import
+import com.progress.habittracker.ui.screens.createschedule.CreateScheduleScreen
 
 /**
  * NavGraph - Navigációs gráf definiálása
@@ -100,19 +102,11 @@ fun NavGraph(
         /**
          * Create Schedule Screen
          * - Új schedule létrehozása
-         * - Navigáció: AddHabit, vissza Home-ra
+         * - Navigáció: vissza Home-ra
          */
         composable(route = Screen.CreateSchedule.route) {
-            // TODO: CreateScheduleScreen() composable hívása
-            // CreateScheduleScreen(
-            //     onNavigateToAddHabit = {
-            //         navController.navigate(Screen.AddHabit.route)
-            //     },
-            //     onNavigateBack = { navController.popBackStack() }
-            // )
-            PlaceholderScreen(
-                screenName = "Create Schedule Screen",
-                onNavigate = { navController.popBackStack() }
+            CreateScheduleScreen(
+                navController = navController
             )
         }
         

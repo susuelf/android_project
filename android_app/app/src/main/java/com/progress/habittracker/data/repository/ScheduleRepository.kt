@@ -1,7 +1,7 @@
 package com.progress.habittracker.data.repository
 
 import com.progress.habittracker.data.local.TokenManager
-import com.progress.habittracker.data.model.ScheduleResponseDto
+import com.progress.habittracker.data.model.*
 import com.progress.habittracker.data.remote.RetrofitClient
 import com.progress.habittracker.util.Resource
 import kotlinx.coroutines.flow.Flow
@@ -212,6 +212,92 @@ class ScheduleRepository(
                     404 -> emit(Resource.Error("Schedule nem talÃ¡lhatÃ³"))
                     403 -> emit(Resource.Error("Nincs jogosultsÃ¡god tÃ¶rÃ¶lni"))
                     else -> emit(Resource.Error("Hiba: ${'$'}{response.message()}"))
+                }
+            }
+            
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Ismeretlen hiba"))
+        }
+    }
+    
+    /**
+     * Egyszeri (custom) schedule létrehozása
+     * 
+     * @param request CreateCustomScheduleRequest - Schedule adatai
+     * @return Flow<Resource<ScheduleResponseDto>> - Létrehozott schedule
+     */
+    fun createCustomSchedule(request: CreateCustomScheduleRequest): Flow<Resource<ScheduleResponseDto>> = flow {
+        try {
+            emit(Resource.Loading())
+            
+            val token = tokenManager.accessToken.first()
+            
+            if (token.isNullOrEmpty()) {
+                emit(Resource.Error("Nincs bejelentkezve"))
+                return@flow
+            }
+            
+            val response = scheduleApi.createCustomSchedule(
+                request = request,
+                authorization = "Bearer $token"
+            )
+            
+            if (response.isSuccessful) {
+                val schedule = response.body()
+                if (schedule != null) {
+                    emit(Resource.Success(schedule))
+                } else {
+                    emit(Resource.Error("Schedule létrehozása sikertelen"))
+                }
+            } else {
+                when (response.code()) {
+                    401 -> emit(Resource.Error("Lejárt a munkamenet"))
+                    400 -> emit(Resource.Error("Hibás adatok"))
+                    404 -> emit(Resource.Error("A habit nem található"))
+                    else -> emit(Resource.Error("Hiba: ${response.message()}"))
+                }
+            }
+            
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Ismeretlen hiba"))
+        }
+    }
+    
+    /**
+     * Ismétlõdõ schedule létrehozása
+     * 
+     * @param request CreateRecurringScheduleRequest - Ismétlõdõ schedule adatai
+     * @return Flow<Resource<List<ScheduleResponseDto>>> - Létrehozott schedule-ok listája
+     */
+    fun createRecurringSchedule(request: CreateRecurringScheduleRequest): Flow<Resource<List<ScheduleResponseDto>>> = flow {
+        try {
+            emit(Resource.Loading())
+            
+            val token = tokenManager.accessToken.first()
+            
+            if (token.isNullOrEmpty()) {
+                emit(Resource.Error("Nincs bejelentkezve"))
+                return@flow
+            }
+            
+            val response = scheduleApi.createRecurringSchedule(
+                request = request,
+                authorization = "Bearer $token"
+            )
+            
+            if (response.isSuccessful) {
+                val schedules = response.body()
+                if (schedules != null) {
+                    emit(Resource.Success(schedules))
+                } else {
+                    emit(Resource.Error("Schedule-ok létrehozása sikertelen"))
+                }
+            } else {
+                when (response.code()) {
+                    401 -> emit(Resource.Error("Lejárt a munkamenet"))
+                    400 -> emit(Resource.Error("Hibás adatok"))
+                    404 -> emit(Resource.Error("A habit nem található"))
+                    else -> emit(Resource.Error("Hiba: ${response.message()}"))
                 }
             }
             

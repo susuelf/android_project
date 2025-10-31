@@ -222,13 +222,29 @@ class CreateScheduleViewModel(
             notes = state.notes.takeIf { it.isNotBlank() }
         )
 
-        // TODO: scheduleRepository.createCustomSchedule(request).collect { ... }
-        // Egyelőre placeholder
-        _uiState.update {
-            it.copy(
-                isCreating = false,
-                createSuccess = true
-            )
+        scheduleRepository.createCustomSchedule(request).collect { resource ->
+            when (resource) {
+                is Resource.Loading -> {
+                    _uiState.update { it.copy(isCreating = true, error = null) }
+                }
+                is Resource.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isCreating = false,
+                            createSuccess = true,
+                            error = null
+                        )
+                    }
+                }
+                is Resource.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isCreating = false,
+                            error = resource.message ?: "Ismeretlen hiba"
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -250,13 +266,29 @@ class CreateScheduleViewModel(
             notes = state.notes.takeIf { it.isNotBlank() }
         )
 
-        // TODO: scheduleRepository.createRecurringSchedule(request).collect { ... }
-        // Egyelőre placeholder
-        _uiState.update {
-            it.copy(
-                isCreating = false,
-                createSuccess = true
-            )
+        scheduleRepository.createRecurringSchedule(request).collect { resource ->
+            when (resource) {
+                is Resource.Loading -> {
+                    _uiState.update { it.copy(isCreating = true, error = null) }
+                }
+                is Resource.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isCreating = false,
+                            createSuccess = true,
+                            error = null
+                        )
+                    }
+                }
+                is Resource.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isCreating = false,
+                            error = resource.message ?: "Ismeretlen hiba"
+                        )
+                    }
+                }
+            }
         }
     }
 
