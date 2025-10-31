@@ -92,8 +92,18 @@ object RetrofitClient {
         retrofit.create(AuthApiService::class.java)
     }
     
+    /**
+     * ScheduleApiService instance létrehozása
+     * 
+     * Schedule-okkal kapcsolatos API műveletek
+     * 
+     * @return ScheduleApiService implementáció
+     */
+    val scheduleApiService: ScheduleApiService by lazy {
+        retrofit.create(ScheduleApiService::class.java)
+    }
+    
     // TODO: Később hozzáadandó API szolgáltatások
-    // val scheduleApiService: ScheduleApiService by lazy { ... }
     // val habitApiService: HabitApiService by lazy { ... }
     // val progressApiService: ProgressApiService by lazy { ... }
     // val profileApiService: ProfileApiService by lazy { ... }

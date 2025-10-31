@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import com.progress.habittracker.ui.screens.auth.SplashScreen
 import com.progress.habittracker.ui.screens.auth.LoginScreen
 import com.progress.habittracker.ui.screens.auth.RegisterScreen
+// Home Screen import
+import com.progress.habittracker.ui.screens.home.HomeScreen
 
 /**
  * NavGraph - Navigációs gráf definiálása
@@ -92,22 +94,7 @@ fun NavGraph(
          * - Navigáció: ScheduleDetails, CreateSchedule, Profile
          */
         composable(route = Screen.Home.route) {
-            // TODO: HomeScreen() composable hívása
-            // HomeScreen(
-            //     onNavigateToScheduleDetails = { scheduleId ->
-            //         navController.navigate(Screen.ScheduleDetails.createRoute(scheduleId))
-            //     },
-            //     onNavigateToCreateSchedule = {
-            //         navController.navigate(Screen.CreateSchedule.route)
-            //     },
-            //     onNavigateToProfile = {
-            //         navController.navigate(Screen.Profile.route)
-            //     }
-            // )
-            PlaceholderScreen(
-                screenName = "Home Screen (Dashboard)",
-                onNavigate = { navController.navigate(Screen.CreateSchedule.route) }
-            )
+            HomeScreen(navController = navController)
         }
         
         /**
