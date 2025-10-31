@@ -1,8 +1,8 @@
 # Android UI Projekt - Állapot Jelentés
 
 **Dátum**: 2025-10-31  
-**Aktuális Branch**: `feature/navigation-setup`  
-**Állapot**: ✅ Navigation Setup kész, Auth Screens következik
+**Aktuális Branch**: `feature/home-screen`  
+**Állapot**: ✅ Home Screen kész, Schedule Management következik
 
 ---
 
@@ -184,61 +184,196 @@ com.progress.habittracker/
 
 ---
 
+## Elkészült Funkciók
+
+### ✅ 1. Alap Projekt Setup (MERGED to main)
+- Jetpack Compose projekt struktúra
+- Material 3 theme
+- MainActivity
+
+### ✅ 2. API Integration - Auth (feature/api-integration)
+- Auth modellek és API service
+- AuthRepository
+- TokenManager
+- Resource wrapper
+
+### ✅ 3. Navigation Setup (feature/navigation-setup)
+- Screen routes definiálása
+- NavGraph implementáció
+- Paraméterezett navigáció
+
+### ✅ 4. Authentication Screens (feature/auth-screens)
+- **Splash Screen** - Auto-login ellenőrzés
+- **Login Screen** - Email/Password bejelentkezés
+- **Register Screen** - Regisztráció validációval
+- **AuthViewModel** - State management
+- **AuthViewModelFactory** - Lifecycle kezelés
+
+### ✅ 5. Home Screen (feature/home-screen) - **ÚJ!**
+
+#### Schedule Models ✅
+**Fájl**: `ScheduleModels.kt`
+- `ScheduleResponseDto` - Schedule teljes adatai
+- `HabitResponseDto` - Habit adatok
+- `ProgressResponseDto` - Progress rekordok
+- `ScheduleStatus` enum - Planned, Completed, Skipped
+- `ParticipantResponseDto` - Résztvevők
+- `HabitCategoryResponseDto` - Kategóriák
+
+#### Schedule API Service ✅
+**Fájl**: `ScheduleApiService.kt`
+- `getSchedulesByDay(date)` - GET /schedule/day
+- `getScheduleById(id)` - GET /schedule/{id}
+- `updateScheduleStatus(id, status)` - PATCH /schedule/{id}
+- `deleteSchedule(id)` - DELETE /schedule/{id}
+- Bearer token authentication
+
+#### Schedule Repository ✅
+**Fájl**: `ScheduleRepository.kt`
+- Flow-based API Resource wrapper-rel
+- Token management integráció
+- Automatikus schedule rendezés start_time szerint
+- Error handling (401, 404, 500)
+- CRUD műveletek (get, update, delete)
+
+#### Home ViewModel ✅
+**Fájlok**: `HomeViewModel.kt`, `HomeViewModelFactory.kt`
+
+**HomeUiState**:
+- `schedules: List<ScheduleResponseDto>` - Schedule lista
+- `isLoading: Boolean` - Betöltés állapot
+- `error: String?` - Hibaüzenet
+- `selectedDate: LocalDate` - Kiválasztott dátum
+- `isRefreshing: Boolean` - Pull-to-refresh állapot
+
+**Funkciók**:
+- `loadSchedules(date)` - Schedule-ok betöltése
+- `refreshSchedules()` - Pull-to-refresh
+- `selectDate(date)` - Dátum váltás
+- `goToNextDay()` / `goToPreviousDay()` - Dátum navigáció
+- `goToToday()` - Mai napra ugrás
+- `toggleScheduleStatus(id, status)` - Checkbox toggle
+- `clearError()` - Hiba törlés
+
+**StateFlow alapú reaktív state management**
+
+#### Home Screen UI ✅
+**Fájlok**: `HomeScreen.kt`, `ScheduleItemCard.kt`
+
+**HomeScreen komponens**:
+- **TopAppBar** - Dátum navigáció
+  - Előző/Következő nap gombok
+  - "MA" gomb (mai napra ugrás)
+  - Dátum és hét napja megjelenítése
+  - Profile ikon (navigáció)
+  
+- **Schedule Lista** - LazyColumn
+  - Schedule-ok időrendi sorrendben
+  - ScheduleItemCard komponensek
+  - Üres állapot (nincs schedule)
+  - Loading állapot (CircularProgressIndicator)
+  
+- **Error Handling** - Snackbar
+  - API hibák megjelenítése
+  - Automatikus dismissal
+  
+- **FAB** - Floating Action Button
+  - Új schedule létrehozása
+  - Navigáció CreateSchedule-ra
+
+**ScheduleItemCard komponens**:
+- **Időpont oszlop** - Start time, duration
+- **Habit információk** - Név, kategória, goal
+- **Státusz checkbox** - Completed/Planned/Skipped
+- **Státusz alapú színezés**:
+  - Completed = zöld (primaryContainer)
+  - Skipped = piros (errorContainer)
+  - Planned = szürke (surfaceVariant)
+- **Kattintható** - Navigáció Schedule Details-re
+- **Időpont formázás** - HH:mm formátum
+
+**Material 3 Design** követése minden komponensben
+
+#### Package Struktúra (frissítve) ✅
+```
+com.progress.habittracker/
+├── data/
+│   ├── local/
+│   │   └── TokenManager.kt
+│   ├── model/
+│   │   ├── AuthModels.kt
+│   │   └── ScheduleModels.kt        # ✨ ÚJ
+│   ├── remote/
+│   │   ├── AuthApiService.kt
+│   │   ├── ScheduleApiService.kt    # ✨ ÚJ
+│   │   └── RetrofitClient.kt
+│   └── repository/
+│       ├── AuthRepository.kt
+│       └── ScheduleRepository.kt    # ✨ ÚJ
+├── navigation/
+│   ├── Screen.kt
+│   └── NavGraph.kt
+├── ui/
+│   ├── screens/
+│   │   ├── auth/
+│   │   │   ├── SplashScreen.kt
+│   │   │   ├── LoginScreen.kt
+│   │   │   └── RegisterScreen.kt
+│   │   └── home/                    # ✨ ÚJ
+│   │       ├── HomeScreen.kt
+│   │       └── ScheduleItemCard.kt
+│   ├── viewmodel/
+│   │   ├── AuthViewModel.kt
+│   │   ├── AuthViewModelFactory.kt
+│   │   ├── HomeViewModel.kt         # ✨ ÚJ
+│   │   └── HomeViewModelFactory.kt  # ✨ ÚJ
+│   └── theme/
+└── util/
+    └── Resource.kt
+```
+
+---
+
 ## Következő Lépések
 
-### ✅ Navigation Setup - KÉSZ!
+### 🎯 Most: Schedule Management (Create, Details, Edit)
 
-Az alkalmazás navigációs struktúrája készen áll. Minden screen route definiálva van, a NavGraph össze van rakva placeholder screen-ekkel, és a MainActivity is be van állítva.
+**Branch név**: `feature/schedule-management`
 
-### 🎯 Most: Authentication Screens (Login, Register, Splash)
+**Elkészítendő funkciók:**
 
-**Branch név**: `feature/auth-screens`
+1. **Schedule Details Screen**
+   - Schedule részletes adatai
+   - Habit információk megjelenítése
+   - Progress history
+   - Edit/Delete gombok
 
-**Elkészítendő komponensek:**
-1. **Splash Screen** 
-   - Auto-login ellenőrzés TokenManager-rel
-   - Átirányítás Home-ra vagy Login-ra
-   - Loading animation
+2. **Create Schedule Screen**
+   - Habit kiválasztás/létrehozás
+   - Időpont beállítás
+   - Ismétlődés pattern (daily, weekdays, weekends)
+   - Duration beállítás
+   - Résztvevők hozzáadása (opcionális)
 
-2. **Login Screen**
-   - Email + Password input mezők
-   - Login gomb -> AuthRepository.signIn()
-   - "Forgot password?" link
-   - "Don't have an account?" link
-   - Error handling és Loading state
+3. **Edit Schedule Screen**
+   - Schedule módosítása
+   - Időpont és duration frissítése
+   - Státusz váltás
+   - Notes szerkesztése
 
-3. **Register Screen**
-   - Username, Email, Password, Confirm Password mezők
-   - Password matching validáció
-   - Register gomb -> AuthRepository.signUp()
-   - "Already have an account?" link
-   - Error handling és Loading state
+### Utána: Habit Management
 
-4. **Reset Password Screen (opcionális)**
-   - Email input mező
-   - Send gomb -> AuthRepository.resetPassword()
-   - Success message
-   - Back to Login link
+**Branch név**: `feature/habit-management`
+- Habit Categories lekérése
+- Add Habit Screen
+- Habit lista megjelenítése
 
-**ViewModels:**
-- `AuthViewModel` - Auth state management
-  - Login, Register, Reset Password logika
-  - UI state (loading, error, success)
-  - Form validation
+### Később: Progress & Profile
 
-**Miért ez a következő?**
-- ✅ API Integration kész (Auth)
-- ✅ Navigation kész
-- ❌ Még nincs UI
-- **Login/Register kell először** - nélküle nem lehet tesztelni a többi screen-t!
-
-### Utána: Home Screen
-
-**Branch név**: `feature/home-screen`  
-Az Authentication Screens után készítjük el a Home Screen-t, ami:
-- Lekéri a napi schedule-okat
-- Megjeleníti őket listában
-- State management ViewModel-lel
+- Progress tracking implementáció
+- Profile Screen
+- Edit Profile
+- Settings
 
 ---
 
