@@ -17,8 +17,8 @@ COPY . .
 # Build the app
 RUN npm run build
 
-# Expose the port NestJS listens on (default 80)
-EXPOSE 80
+# Expose the port NestJS listens on
+EXPOSE 8080
 
 # Start the app
 CMD ["node", "dist/src/main.js"]
