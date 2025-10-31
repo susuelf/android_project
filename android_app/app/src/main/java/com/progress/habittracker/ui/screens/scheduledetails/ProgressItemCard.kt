@@ -117,7 +117,7 @@ private fun formatDate(dateString: String?): String {
         val date = LocalDate.parse(dateString)
         val formatter = DateTimeFormatter.ofPattern("yyyy. MMM. dd.")
         date.format(formatter)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         dateString
     }
 }
@@ -136,8 +136,7 @@ private fun ProgressItemCardPreview_Completed() {
                 loggedTime = 45,
                 notes = "Jó edzés volt, sok erőt használtam",
                 isCompleted = true,
-                createdAt = "2025-01-15T10:30:00Z",
-                updatedAt = "2025-01-15T10:30:00Z"
+                createdAt = "2025-01-15T10:30:00Z"
             ),
             modifier = Modifier.padding(16.dp)
         )
@@ -156,8 +155,7 @@ private fun ProgressItemCardPreview_NotCompleted() {
                 loggedTime = null,
                 notes = null,
                 isCompleted = false,
-                createdAt = "2025-01-14T10:30:00Z",
-                updatedAt = "2025-01-14T10:30:00Z"
+                createdAt = "2025-01-14T10:30:00Z"
             ),
             modifier = Modifier.padding(16.dp)
         )

@@ -38,6 +38,7 @@ import java.time.format.DateTimeFormatter
  * - Edit/Delete gombok
  * - Státusz váltás
  */
+@Suppress("NewApi") // Java Time API is available via desugaring
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleDetailsScreen(
@@ -194,18 +195,19 @@ private fun ScheduleDetailsContent(
                 progressPercentage = viewModel.calculateProgressPercentage(),
                 completedCount = viewModel.getCompletedProgressCount(),
                 totalCount = viewModel.getTotalProgressCount(),
-                goal = schedule.habit?.goal
+                goal = schedule.habit.goal
             )
         }
 
         // Status Change Section
         item {
+            val isUpdating by viewModel.uiState.collectAsState()
             StatusChangeCard(
                 currentStatus = schedule.status,
                 onStatusChange = { newStatus ->
                     viewModel.updateScheduleStatus(newStatus)
                 },
-                isUpdating = viewModel.uiState.value.isUpdating
+                isUpdating = isUpdating.isUpdating
             )
         }
 
@@ -247,7 +249,7 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = habit?.name ?: "Habit név",
+                text = habit.name,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -256,26 +258,24 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
             Spacer(modifier = Modifier.height(8.dp))
 
             // Category
-            if (habit?.category != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Kategória:",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = habit.category.name ?: "N/A",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Kategória:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = habit.category.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Goal
-            if (habit?.goal != null) {
+            if (habit.goal != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Cél:",
@@ -294,10 +294,10 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
             }
 
             // Description
-            if (!habit?.description.isNullOrBlank()) {
+            if (!habit.description.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = habit?.description ?: "",
+                    text = habit.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -385,8 +385,10 @@ private fun ProgressBarCard(
     progressPercentage: Float,
     completedCount: Int,
     totalCount: Int,
-    goal: Int?
+    goal: String?
 ) {
+    val goalInt = goal?.toIntOrNull()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -426,7 +428,7 @@ private fun ProgressBarCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "$completedCount / ${goal ?: totalCount} befejezve",
+                text = "$completedCount / ${goalInt ?: totalCount} befejezve",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
@@ -563,7 +565,7 @@ private fun formatDate(dateString: String?): String {
         val date = LocalDate.parse(dateString)
         val formatter = DateTimeFormatter.ofPattern("yyyy. MMM. dd.")
         date.format(formatter)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         dateString
     }
 }
@@ -574,7 +576,7 @@ private fun formatTime(timeString: String?): String {
         val time = LocalTime.parse(timeString)
         val formatter = DateTimeFormatter.ofPattern("HH:mm")
         time.format(formatter)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         timeString
     }
 }

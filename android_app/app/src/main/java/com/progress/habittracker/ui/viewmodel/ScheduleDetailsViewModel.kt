@@ -127,7 +127,7 @@ class ScheduleDetailsViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdating = true, error = null) }
 
-            scheduleRepository.updateScheduleStatus(scheduleId, newStatus).collect { resource ->
+            scheduleRepository.updateScheduleStatus(scheduleId, newStatus.name).collect { resource ->
                 when (resource) {
                     is Resource.Loading -> {
                         // Már be van állítva az isUpdating
@@ -205,16 +205,19 @@ class ScheduleDetailsViewModel(
      */
     fun calculateProgressPercentage(): Float {
         val schedule = _uiState.value.schedule ?: return 0f
-        val habit = schedule.habit ?: return 0f
+        val habit = schedule.habit
 
-        // Ha nincs goal, akkor 0%
-        if (habit.goal == null || habit.goal <= 0) return 0f
+        // Goal String?-ból Int-re konvertálás
+        val goalInt = habit.goal?.toIntOrNull() ?: return 0f
+
+        // Ha nincs goal vagy 0, akkor 0%
+        if (goalInt <= 0) return 0f
 
         // Completed progress rekordok száma
         val completedCount = schedule.progress?.count { it.isCompleted == true } ?: 0
 
         // Százalék számítás
-        return (completedCount.toFloat() / habit.goal.toFloat() * 100f).coerceIn(0f, 100f)
+        return (completedCount.toFloat() / goalInt.toFloat() * 100f).coerceIn(0f, 100f)
     }
 
     /**

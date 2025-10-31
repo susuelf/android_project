@@ -1,7 +1,9 @@
 package com.progress.habittracker.data.remote
 
+import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.progress.habittracker.util.NetworkUtils
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -13,22 +15,28 @@ import java.util.concurrent.TimeUnit
  * 
  * Ez az object felelős a Retrofit instance létrehozásáért és konfigurálásáért.
  * Singleton pattern-t használunk, hogy csak egy instance legyen.
+ * 
+ * ⚠️ FONTOS: Az initialize() metódust kell hívni az Application onCreate()-ben!
  */
 object RetrofitClient {
     
     /**
      * Backend API alap URL
      * 
-     * FONTOS: Ezt módosítsd a saját backend címedre!
-     * - Android emulatorhoz Docker backend: használd a számítógép IP címét (WiFi/Ethernet)
-     *   Példa: http://192.168.1.100:8080/ (cseréld le a saját IP-dre!)
-     * - Fizikai Android eszközhöz: http://YOUR_LOCAL_IP:8080/
-     * - Production: https://your-backend-url.com/
-     * 
-     * MEGJEGYZÉS: A Windows-on a virtuális hálózat IP-je változhat.
-     * Jelenleg elérhető címek: 172.16.0.218, 26.11.53.146
+     * Ez a változó dinamikusan kerül beállításra az initialize() metódusban.
+     * Automatikusan detektálja a WiFi gateway IP címét, így nem kell kézzel frissíteni.
      */
-    private const val BASE_URL = "http://172.16.0.218:8080/"
+    private var baseUrl: String = "http://10.0.2.2:8080/" // Fallback URL
+    
+    /**
+     * Inicializálás - FONTOS: Hívd meg az Application onCreate()-ben!
+     * 
+     * @param context Application Context
+     */
+    fun initialize(context: Context) {
+        baseUrl = NetworkUtils.getBackendBaseUrl(context)
+        android.util.Log.d("RetrofitClient", "Backend URL initialized: $baseUrl")
+    }
     
     /**
      * Gson instance - JSON <-> Kotlin object konverzióhoz
@@ -71,13 +79,13 @@ object RetrofitClient {
     /**
      * Retrofit instance
      * 
-     * - BASE_URL beállítása
+     * - BASE_URL beállítása (dinamikusan az initialize()-ből)
      * - OkHttpClient használata
      * - Gson converter használata JSON kezeléshez
      */
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
