@@ -1,7 +1,9 @@
 package com.progress.habittracker.data.remote
 
+import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.progress.habittracker.util.NetworkUtils
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -13,22 +15,33 @@ import java.util.concurrent.TimeUnit
  * 
  * Ez az object felelős a Retrofit instance létrehozásáért és konfigurálásáért.
  * Singleton pattern-t használunk, hogy csak egy instance legyen.
+ * 
+ * FONTOS: Az initialize(context) metódust meg kell hívni az Application onCreate()-ben,
+ * hogy a dinamikus IP felismerés működjön!
  */
 object RetrofitClient {
     
     /**
-     * Backend API alap URL
+     * Backend API alap URL - Dinamikusan generálva
      * 
-     * FONTOS: Ezt módosítsd a saját backend címedre!
-     * - Android emulatorhoz Docker backend: használd a számítógép IP címét (WiFi/Ethernet)
-     *   Példa: http://192.168.1.100:8080/ (cseréld le a saját IP-dre!)
-     * - Fizikai Android eszközhöz: http://YOUR_LOCAL_IP:8080/
-     * - Production: https://your-backend-url.com/
-     * 
-     * MEGJEGYZÉS: A 10.0.2.2 NEM működik Docker Desktop-pal Windows-on,
-     * mert a Docker egy virtuális hálózatban fut. Használd a gép tényleges IP címét!
+     * A NetworkUtils automatikusan megtalálja a gateway IP címet:
+     * - WiFi DHCP gateway lekérése
+     * - Fallback: device IP alapján becslés
+     * - Fallback: emulator default (10.0.2.2)
      */
-    private const val BASE_URL = "http://192.168.197.132:8080/"
+    private var baseUrl: String = "http://10.0.2.2:8080/" // Default fallback
+    
+    /**
+     * Inicializálás - Android Context szükséges a dinamikus IP felismeréshez
+     * 
+     * FONTOS: Ezt meg kell hívni az Application osztály onCreate() metódusában!
+     * 
+     * @param context Application context
+     */
+    fun initialize(context: Context) {
+        baseUrl = NetworkUtils.getBackendBaseUrl(context)
+        android.util.Log.d("RetrofitClient", "Backend URL initialized: $baseUrl")
+    }
     
     /**
      * Gson instance - JSON <-> Kotlin object konverzióhoz
@@ -71,13 +84,13 @@ object RetrofitClient {
     /**
      * Retrofit instance
      * 
-     * - BASE_URL beállítása
+     * - baseUrl használata (dinamikusan generált)
      * - OkHttpClient használata
      * - Gson converter használata JSON kezeléshez
      */
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
