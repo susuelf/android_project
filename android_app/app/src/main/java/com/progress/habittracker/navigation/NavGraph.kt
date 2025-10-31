@@ -18,6 +18,8 @@ import com.progress.habittracker.ui.screens.auth.LoginScreen
 import com.progress.habittracker.ui.screens.auth.RegisterScreen
 // Home Screen import
 import com.progress.habittracker.ui.screens.home.HomeScreen
+// Schedule Details Screen import
+import com.progress.habittracker.ui.screens.scheduledetails.ScheduleDetailsScreen
 
 /**
  * NavGraph - Navigációs gráf definiálása
@@ -135,21 +137,9 @@ fun NavGraph(
         ) { backStackEntry ->
             val scheduleId = backStackEntry.arguments?.getInt("scheduleId") ?: 0
             
-            // TODO: ScheduleDetailsScreen() composable hívása
-            // ScheduleDetailsScreen(
-            //     scheduleId = scheduleId,
-            //     onNavigateToEdit = { id ->
-            //         navController.navigate(Screen.EditSchedule.createRoute(id))
-            //     },
-            //     onNavigateToAddProgress = { id ->
-            //         navController.navigate(Screen.AddProgress.createRoute(id))
-            //     },
-            //     onNavigateBack = { navController.popBackStack() },
-            //     onDeleteSuccess = { navController.popBackStack() }
-            // )
-            PlaceholderScreen(
-                screenName = "Schedule Details Screen (ID: $scheduleId)",
-                onNavigate = { navController.popBackStack() }
+            ScheduleDetailsScreen(
+                navController = navController,
+                scheduleId = scheduleId
             )
         }
         
