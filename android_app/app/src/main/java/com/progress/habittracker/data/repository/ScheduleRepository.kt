@@ -221,10 +221,10 @@ class ScheduleRepository(
     }
     
     /**
-     * Egyszeri (custom) schedule létrehozása
+     * Egyszeri (custom) schedule lï¿½trehozï¿½sa
      * 
      * @param request CreateCustomScheduleRequest - Schedule adatai
-     * @return Flow<Resource<ScheduleResponseDto>> - Létrehozott schedule
+     * @return Flow<Resource<ScheduleResponseDto>> - Lï¿½trehozott schedule
      */
     fun createCustomSchedule(request: CreateCustomScheduleRequest): Flow<Resource<ScheduleResponseDto>> = flow {
         try {
@@ -247,13 +247,13 @@ class ScheduleRepository(
                 if (schedule != null) {
                     emit(Resource.Success(schedule))
                 } else {
-                    emit(Resource.Error("Schedule létrehozása sikertelen"))
+                    emit(Resource.Error("Schedule lï¿½trehozï¿½sa sikertelen"))
                 }
             } else {
                 when (response.code()) {
-                    401 -> emit(Resource.Error("Lejárt a munkamenet"))
-                    400 -> emit(Resource.Error("Hibás adatok"))
-                    404 -> emit(Resource.Error("A habit nem található"))
+                    401 -> emit(Resource.Error("Lejï¿½rt a munkamenet"))
+                    400 -> emit(Resource.Error("Hibï¿½s adatok"))
+                    404 -> emit(Resource.Error("A habit nem talï¿½lhatï¿½"))
                     else -> emit(Resource.Error("Hiba: ${response.message()}"))
                 }
             }
@@ -264,10 +264,10 @@ class ScheduleRepository(
     }
     
     /**
-     * Ismétlõdõ schedule létrehozása
+     * Ismï¿½tlï¿½dï¿½ schedule lï¿½trehozï¿½sa
      * 
-     * @param request CreateRecurringScheduleRequest - Ismétlõdõ schedule adatai
-     * @return Flow<Resource<List<ScheduleResponseDto>>> - Létrehozott schedule-ok listája
+     * @param request CreateRecurringScheduleRequest - Ismï¿½tlï¿½dï¿½ schedule adatai
+     * @return Flow<Resource<List<ScheduleResponseDto>>> - Lï¿½trehozott schedule-ok listï¿½ja
      */
     fun createRecurringSchedule(request: CreateRecurringScheduleRequest): Flow<Resource<List<ScheduleResponseDto>>> = flow {
         try {
@@ -290,13 +290,13 @@ class ScheduleRepository(
                 if (schedules != null) {
                     emit(Resource.Success(schedules))
                 } else {
-                    emit(Resource.Error("Schedule-ok létrehozása sikertelen"))
+                    emit(Resource.Error("Schedule-ok lï¿½trehozï¿½sa sikertelen"))
                 }
             } else {
                 when (response.code()) {
-                    401 -> emit(Resource.Error("Lejárt a munkamenet"))
-                    400 -> emit(Resource.Error("Hibás adatok"))
-                    404 -> emit(Resource.Error("A habit nem található"))
+                    401 -> emit(Resource.Error("Lejï¿½rt a munkamenet"))
+                    400 -> emit(Resource.Error("Hibï¿½s adatok"))
+                    404 -> emit(Resource.Error("A habit nem talï¿½lhatï¿½"))
                     else -> emit(Resource.Error("Hiba: ${response.message()}"))
                 }
             }

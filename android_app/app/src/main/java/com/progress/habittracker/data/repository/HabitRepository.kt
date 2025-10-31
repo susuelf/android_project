@@ -5,6 +5,7 @@ import com.progress.habittracker.data.model.*
 import com.progress.habittracker.data.remote.RetrofitClient
 import com.progress.habittracker.util.Resource
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 
 /**
@@ -28,7 +29,7 @@ class HabitRepository(
         emit(Resource.Loading())
         
         try {
-            val token = tokenManager.getAccessToken()
+            val token = tokenManager.accessToken.first()
             if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
                 return@flow
@@ -66,7 +67,7 @@ class HabitRepository(
         emit(Resource.Loading())
         
         try {
-            val token = tokenManager.getAccessToken()
+            val token = tokenManager.accessToken.first()
             if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
                 return@flow
@@ -102,7 +103,7 @@ class HabitRepository(
         emit(Resource.Loading())
         
         try {
-            val token = tokenManager.getAccessToken()
+            val token = tokenManager.accessToken.first()
             if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
                 return@flow
