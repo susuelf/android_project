@@ -1,8 +1,8 @@
 # Android UI Projekt - Állapot Jelentés
 
 **Dátum**: 2025-10-31  
-**Aktuális Branch**: `feature/home-screen`  
-**Állapot**: ✅ Home Screen kész, Schedule Management következik
+**Aktuális Branch**: `feature/schedule-details`  
+**Állapot**: ✅ Schedule Details Screen kész, Create Schedule következik
 
 ---
 
@@ -294,6 +294,90 @@ com.progress.habittracker/
 
 **Material 3 Design** követése minden komponensben
 
+---
+
+### ✅ 6. Schedule Details Screen (feature/schedule-details) - **ÚJ!**
+
+#### Schedule Details ViewModel ✅
+**Fájlok**: `ScheduleDetailsViewModel.kt`, `ScheduleDetailsViewModelFactory.kt`
+
+**ScheduleDetailsUiState**:
+- `schedule: ScheduleResponseDto?` - Schedule részletes adatai
+- `isLoading: Boolean` - Betöltés állapot
+- `error: String?` - Hibaüzenet
+- `isRefreshing: Boolean` - Pull-to-refresh állapot
+- `isUpdating: Boolean` - Státusz frissítés állapot
+- `isDeleting: Boolean` - Törlés állapot
+- `deleteSuccess: Boolean` - Sikeres törlés flag
+
+**Funkciók**:
+- `loadScheduleDetails()` - Schedule betöltése ID alapján
+- `refreshSchedule()` - Pull-to-refresh
+- `updateScheduleStatus(status)` - Státusz váltás (Planned/Completed/Skipped)
+- `deleteSchedule()` - Schedule törlése
+- `calculateProgressPercentage()` - Progress százalék számítás
+- `getCompletedProgressCount()` - Befejezett progress rekordok száma
+- `getTotalProgressCount()` - Összes progress rekordok száma
+- `clearError()` - Hiba törlés
+
+**StateFlow alapú reaktív state management**
+
+#### Schedule Details UI ✅
+**Fájlok**: `ScheduleDetailsScreen.kt`, `ProgressItemCard.kt`
+
+**ScheduleDetailsScreen komponens**:
+- **TopAppBar** - Vissza gomb, Edit és Delete akciók
+  - Edit gomb -> EditSchedule navigáció (TODO)
+  - Delete gomb -> Confirmation dialog
+  - Delete success -> automatikus navigáció vissza
+  
+- **Habit Info Card** - Primaryকnতainer
+  - Habit név (headline)
+  - Kategória
+  - Goal (cél alkalmak száma)
+  - Leírás (ha van)
+  
+- **Schedule Info Card** - SurfaceVariant
+  - Dátum formázva (yyyy. MMM. dd.)
+  - Időpont (start - end)
+  - Duration (perc)
+  - Custom schedule jelzés
+  - Résztvevők lista (ha van)
+  
+- **Progress Bar Card** - SecondaryContainer
+  - Vizuális progress bar (LinearProgressIndicator)
+  - Százalék megjelenítés (0-100%)
+  - Befejezett / Goal szöveg
+  - Goal alapú vagy total count alapú számítás
+  
+- **Status Change Card**
+  - 3 FilterChip: Tervezett, Kész, Kihagyva
+  - Aktív státusz selected
+  - onStatusChange callback -> ViewModel
+  - Disabled amikor isUpdating
+  
+- **Notes Card** - TertiaryContainer (ha van notes)
+  - Jegyzetek megjelenítése
+  
+- **Progress History** - LazyColumn items
+  - Rendezve dátum szerint (desc)
+  - ProgressItemCard komponensek
+  - Ha nincs progress, nem jelenik meg a szekció
+
+**ProgressItemCard komponens**:
+- **Dátum** - Formázva (yyyy. MMM. dd.)
+- **Logged time** - Perc formátumban (ha van)
+- **Notes** - Max 2 sor (ha van)
+- **Completed ikon** - CheckCircle vagy Circle
+- **Színezés** - Completed = primaryContainer, egyébként surfaceVariant
+
+**Loading/Error States**:
+- Loading: CircularProgressIndicator központosítva
+- Error: Hibaüzenet + Újrapróbálás gomb
+- Delete Dialog: Confirmation megerősítéssel
+
+**Material 3 Design** követése minden komponensben
+
 #### Package Struktúra (frissítve) ✅
 ```
 com.progress.habittracker/
@@ -302,14 +386,14 @@ com.progress.habittracker/
 │   │   └── TokenManager.kt
 │   ├── model/
 │   │   ├── AuthModels.kt
-│   │   └── ScheduleModels.kt        # ✨ ÚJ
+│   │   └── ScheduleModels.kt
 │   ├── remote/
 │   │   ├── AuthApiService.kt
-│   │   ├── ScheduleApiService.kt    # ✨ ÚJ
+│   │   ├── ScheduleApiService.kt
 │   │   └── RetrofitClient.kt
 │   └── repository/
 │       ├── AuthRepository.kt
-│       └── ScheduleRepository.kt    # ✨ ÚJ
+│       └── ScheduleRepository.kt
 ├── navigation/
 │   ├── Screen.kt
 │   └── NavGraph.kt
@@ -319,14 +403,19 @@ com.progress.habittracker/
 │   │   │   ├── SplashScreen.kt
 │   │   │   ├── LoginScreen.kt
 │   │   │   └── RegisterScreen.kt
-│   │   └── home/                    # ✨ ÚJ
-│   │       ├── HomeScreen.kt
-│   │       └── ScheduleItemCard.kt
+│   │   ├── home/
+│   │   │   ├── HomeScreen.kt
+│   │   │   └── ScheduleItemCard.kt
+│   │   └── scheduledetails/         # ✨ ÚJ
+│   │       ├── ScheduleDetailsScreen.kt
+│   │       └── ProgressItemCard.kt
 │   ├── viewmodel/
 │   │   ├── AuthViewModel.kt
 │   │   ├── AuthViewModelFactory.kt
-│   │   ├── HomeViewModel.kt         # ✨ ÚJ
-│   │   └── HomeViewModelFactory.kt  # ✨ ÚJ
+│   │   ├── HomeViewModel.kt
+│   │   ├── HomeViewModelFactory.kt
+│   │   ├── ScheduleDetailsViewModel.kt      # ✨ ÚJ
+│   │   └── ScheduleDetailsViewModelFactory.kt  # ✨ ÚJ
 │   └── theme/
 └── util/
     └── Resource.kt
@@ -336,26 +425,23 @@ com.progress.habittracker/
 
 ## Következő Lépések
 
-### 🎯 Most: Schedule Management (Create, Details, Edit)
+### 🎯 Most: Create Schedule Screen
 
-**Branch név**: `feature/schedule-management`
+**Branch név**: `feature/create-schedule`
 
 **Elkészítendő funkciók:**
 
-1. **Schedule Details Screen**
-   - Schedule részletes adatai
-   - Habit információk megjelenítése
-   - Progress history
-   - Edit/Delete gombok
-
-2. **Create Schedule Screen**
-   - Habit kiválasztás/létrehozás
-   - Időpont beállítás
-   - Ismétlődés pattern (daily, weekdays, weekends)
-   - Duration beállítás
+1. **Create Schedule Screen**
+   - Habit kiválasztás dropdown (vagy új habit létrehozása)
+   - Dátum választás (DatePicker)
+   - Időpont beállítás (TimePicker - start, end)
+   - Duration automatikus számítás vagy manuális megadás
+   - Ismétlődés pattern (daily, weekdays, weekends, custom)
    - Résztvevők hozzáadása (opcionális)
+   - Notes mező
+   - Mentés gomb -> API call -> vissza Home-ra
 
-3. **Edit Schedule Screen**
+2. **Edit Schedule Screen** (később)
    - Schedule módosítása
    - Időpont és duration frissítése
    - Státusz váltás
