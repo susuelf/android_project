@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,7 +20,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.progress.habittracker.data.local.TokenManager
-import com.progress.habittracker.data.local.dataStore
 import com.progress.habittracker.data.repository.ScheduleRepository
 import com.progress.habittracker.navigation.Screen
 import com.progress.habittracker.ui.theme.Progr3SSTheme
@@ -46,30 +47,30 @@ import java.util.*
  * 
  * @param navController Navigációs controller
  */
+@Suppress("NewApi") // Java Time API is available via desugaring
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavController
 ) {
     val context = LocalContext.current
-    
+
     // ViewModel inicializálás Factory-val
-    val tokenManager = remember { TokenManager(context.dataStore) }
+    val tokenManager = remember { TokenManager(context) }
     val repository = remember { ScheduleRepository(tokenManager) }
     val viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(repository)
     )
-    
+
     // UI State collect
     val uiState by viewModel.uiState.collectAsState()
-    
+
     // Dátum formázók
     val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy. MM. dd.") }
-    val dayOfWeekFormatter = remember { DateTimeFormatter.ofPattern("EEEE", Locale("hu")) }
-    
+
     // Snackbar host state
     val snackbarHostState = remember { SnackbarHostState() }
-    
+
     // Error handling - Snackbar megjelenítése
     LaunchedEffect(uiState.error) {
         uiState.error?.let { errorMessage ->
@@ -80,14 +81,17 @@ fun HomeScreen(
             viewModel.clearError()
         }
     }
-    
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             // Top App Bar - Dátum navigáció
             TopAppBar(
                 title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         // Dátum
                         Text(
                             text = uiState.selectedDate.format(dateFormatter),
@@ -96,8 +100,8 @@ fun HomeScreen(
                         )
                         // Hét napja
                         Text(
-                            text = uiState.selectedDate.format(dayOfWeekFormatter)
-                                .replaceFirstChar { it.uppercase() },
+                            text = uiState.selectedDate.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("hu"))
+                                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.forLanguageTag("hu")) else it.toString() },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -107,7 +111,7 @@ fun HomeScreen(
                     // Előző nap
                     IconButton(onClick = { viewModel.goToPreviousDay() }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Előző nap"
                         )
                     }
@@ -117,15 +121,15 @@ fun HomeScreen(
                     TextButton(onClick = { viewModel.goToToday() }) {
                         Text("MA")
                     }
-                    
+
                     // Következő nap
                     IconButton(onClick = { viewModel.goToNextDay() }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowForward,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                             contentDescription = "Következő nap"
                         )
                     }
-                    
+
                     // Profile icon (navigáció Profile-ra)
                     IconButton(onClick = { navController.navigate(Screen.Profile.route) }) {
                         Icon(
@@ -159,14 +163,14 @@ fun HomeScreen(
                 uiState.isLoading && uiState.schedules.isEmpty() -> {
                     LoadingState()
                 }
-                
+
                 // Üres állapot - nincs schedule
                 !uiState.isLoading && uiState.schedules.isEmpty() -> {
                     EmptyState(
                         onCreateSchedule = { navController.navigate(Screen.CreateSchedule.route) }
                     )
                 }
-                
+
                 // Schedules megjelenítése
                 else -> {
                     ScheduleList(
@@ -237,23 +241,23 @@ private fun EmptyState(
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
-            
+
             Text(
                 text = "Nincs scheduled feladat erre a napra",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-            
+
             Text(
                 text = "Adj hozzá egy új scheduled-ot a + gombbal!",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Button(
                 onClick = onCreateSchedule,
                 modifier = Modifier.fillMaxWidth(0.6f)
@@ -305,7 +309,7 @@ private fun ScheduleList(
                 onStatusToggle = onStatusToggle
             )
         }
-        
+
         // Extra padding a FAB miatt
         item {
             Spacer(modifier = Modifier.height(80.dp))

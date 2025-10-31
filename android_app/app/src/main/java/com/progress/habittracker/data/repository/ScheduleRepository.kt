@@ -44,7 +44,7 @@ class ScheduleRepository(
             emit(Resource.Loading())
             
             // 2. Token lekérése
-            val token = tokenManager.getAccessToken().first()
+            val token = tokenManager.accessToken.first()
             
             if (token.isNullOrEmpty()) {
                 // Nincs token - felhasználó nincs bejelentkezve
@@ -73,7 +73,7 @@ class ScheduleRepository(
                     400 -> emit(Resource.Error("Hibás dátum formátum"))
                     404 -> emit(Resource.Error("A kért schedule-ok nem találhatók"))
                     500 -> emit(Resource.Error("Szerver hiba. Próbáld újra később!"))
-                    else -> emit(Resource.Error("Hiba történt: ${response.message()}"))
+                    else -> emit(Resource.Error("Hiba történt: ${'$'}{response.message()}"))
                 }
             }
             
@@ -96,7 +96,7 @@ class ScheduleRepository(
         try {
             emit(Resource.Loading())
             
-            val token = tokenManager.getAccessToken().first()
+            val token = tokenManager.accessToken.first()
             
             if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
@@ -120,7 +120,7 @@ class ScheduleRepository(
                     401 -> emit(Resource.Error("Lejárt a munkamenet"))
                     404 -> emit(Resource.Error("A schedule nem található"))
                     403 -> emit(Resource.Error("Nincs jogosultságod megtekinteni ezt a schedule-t"))
-                    else -> emit(Resource.Error("Hiba: ${response.message()}"))
+                    else -> emit(Resource.Error("Hiba: ${'$'}{response.message()}"))
                 }
             }
             
@@ -145,7 +145,7 @@ class ScheduleRepository(
         try {
             emit(Resource.Loading())
             
-            val token = tokenManager.getAccessToken().first()
+            val token = tokenManager.accessToken.first()
             
             if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
@@ -172,7 +172,7 @@ class ScheduleRepository(
                     401 -> emit(Resource.Error("Lejárt a munkamenet"))
                     404 -> emit(Resource.Error("Schedule nem található"))
                     403 -> emit(Resource.Error("Nincs jogosultságod módosítani"))
-                    else -> emit(Resource.Error("Hiba: ${response.message()}"))
+                    else -> emit(Resource.Error("Hiba: ${'$'}{response.message()}"))
                 }
             }
             
@@ -191,7 +191,7 @@ class ScheduleRepository(
         try {
             emit(Resource.Loading())
             
-            val token = tokenManager.getAccessToken().first()
+            val token = tokenManager.accessToken.first()
             
             if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
@@ -211,7 +211,7 @@ class ScheduleRepository(
                     401 -> emit(Resource.Error("Lejárt a munkamenet"))
                     404 -> emit(Resource.Error("Schedule nem található"))
                     403 -> emit(Resource.Error("Nincs jogosultságod törölni"))
-                    else -> emit(Resource.Error("Hiba: ${response.message()}"))
+                    else -> emit(Resource.Error("Hiba: ${'$'}{response.message()}"))
                 }
             }
             
