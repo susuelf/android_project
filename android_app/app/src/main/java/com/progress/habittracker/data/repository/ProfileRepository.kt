@@ -222,14 +222,14 @@ class ProfileRepository(
             
             if (response.isSuccessful) {
                 // Token-ek törlése local storage-ból
-                tokenManager.clearTokens()
+                tokenManager.clearAll()
                 
                 emit(Resource.Success(true))
             } else {
                 when (response.code()) {
                     401 -> {
                         // Token már invalid, törölhetjük
-                        tokenManager.clearTokens()
+                        tokenManager.clearAll()
                         emit(Resource.Success(true))
                     }
                     else -> emit(Resource.Error("Hiba: ${response.message()}"))
