@@ -2,7 +2,7 @@
 
 **Dátum**: 2025-11-01  
 **Aktuális Branch**: `main`  
-**Állapot**: ✅ Add Progress Screen kész és merged to main, Edit Schedule következik
+**Állapot**: ✅ Schedule Details & Edit Schedule Screens merged to main, Profile Screen következik
 
 ---
 
@@ -711,39 +711,197 @@ com.progress.habittracker/
 
 ---
 
+### ✅ 9. Schedule Details & Edit Schedule Screens (feature/edit-schedule → MERGED to main) - **ÚJ!**
+
+#### Schedule Details Screen Aktiválás ✅
+**Fájl**: `NavGraph.kt` (frissítve)
+
+**Változtatások**:
+- PlaceholderScreen helyett `ScheduleDetailsScreen` aktiválva
+- Import hozzáadva: `com.progress.habittracker.ui.screens.scheduledetails.ScheduleDetailsScreen`
+- Már korábban implementált komponensek:
+  * ScheduleDetailsViewModel (state management)
+  * ScheduleDetailsScreen UI (habit info, schedule info, progress bar, status change, notes, progress history)
+  * ProgressItemCard (progress lista elemek)
+
+#### UpdateScheduleRequest Model ✅
+**Fájl**: `ScheduleModels.kt` (bővítve)
+
+**UpdateScheduleRequest**:
+- `startTime: String?` - Kezdési időpont (ISO 8601)
+- `endTime: String?` - Befejezési időpont (ISO 8601)
+- `durationMinutes: Int?` - Időtartam percben
+- `status: String?` - Státusz (Planned/Completed/Skipped)
+- `date: String?` - Dátum (ISO 8601)
+- `isCustom: Boolean?` - Egyedi schedule-e
+- `participantIds: List<Int>?` - Résztvevők ID listája
+- `notes: String?` - Jegyzetek
+
+**Minden mező nullable** - Partial update támogatás
+
+#### Schedule API Service Bővítés ✅
+**Fájl**: `ScheduleApiService.kt` (frissítve)
+
+**Új endpoint**:
+```kotlin
+@PATCH("schedule/{id}")
+suspend fun updateSchedule(
+    @Path("id") id: Int,
+    @Body request: UpdateScheduleRequest,
+    @Header("Authorization") authorization: String
+): Response<ScheduleResponseDto>
+```
+
+#### Schedule Repository Bővítés ✅
+**Fájl**: `ScheduleRepository.kt` (frissítve)
+
+**updateSchedule() metódus**:
+- `Flow<Resource<ScheduleResponseDto>>` típusú
+- UpdateScheduleRequest objektum küldése
+- Error handling: 401 (Lejárt munkamenet), 404 (Nem található), 400 (Hibás adatok), 403 (Nincs jogosultság)
+- Bearer token authentication
+
+#### Edit Schedule ViewModel ✅
+**Fájlok**: `EditScheduleViewModel.kt` (232 sor), `EditScheduleViewModelFactory.kt`
+
+**EditScheduleUiState**:
+- `schedule: ScheduleResponseDto?` - Teljes schedule objektum
+- `date: String` - Kiválasztott dátum
+- `startTime: String` - Kezdési időpont
+- `endTime: String` - Befejezési időpont (opcionális)
+- `durationMinutes: String` - Időtartam string formában
+- `status: ScheduleStatus` - Státusz enum
+- `notes: String` - Jegyzetek
+- `isLoading: Boolean` - Betöltés állapot
+- `isUpdating: Boolean` - Frissítés állapot
+- `updateSuccess: Boolean` - Sikeres frissítés flag
+- `error: String?` - Hibaüzenet
+
+**Funkciók**:
+- `loadScheduleDetails()` - Schedule betöltése ID alapján (auto-load in init)
+- `setDate()` / `setStartTime()` / `setEndTime()` - Időpont beállítások
+- `setDuration()` - Duration manuális beállítás (validációval)
+- `setStatus()` - Státusz váltás
+- `setNotes()` - Jegyzetek szerkesztés
+- `updateSchedule()` - Schedule frissítés API hívás
+  * ISO 8601 formázás: `"${date}T${time}"`
+  * UpdateScheduleRequest objektum létrehozás
+  * Repository hívás
+- `parseDate()` - Backend dátum formátum parsing ("2025-10-31T14:30:00.000Z" → LocalDate)
+- `parseTime()` - Backend idő formátum parsing ("14:30:00" → LocalTime)
+
+**StateFlow alapú reaktív state management**
+
+#### Edit Schedule UI ✅
+**Fájl**: `EditScheduleScreen.kt` (505 sor)
+
+**EditScheduleScreen komponens**:
+- **TopAppBar** - "Schedule Szerkesztése" cím, vissza gomb
+  
+- **HabitInfoCard** - Read-only habit információk
+  - Habit név, kategória, goal
+  - PrimaryContainer színezés
+  - Nem szerkeszthető mezők
+  
+- **DateCard** - Dátum választás
+  - OutlinedButton Android DatePickerDialog-gal
+  - Calendar ikon
+  - Formázott dátum megjelenítés (yyyy. MMMM dd.)
+  
+- **TimeCard** - Kezdési és befejezési időpont
+  - **Start time**: Kötelező, TimePickerDialog
+  - **End time**: Opcionális
+    * "Befejezési idő hozzáadása" gomb (ha nincs)
+    * TimePickerDialog + Remove gomb (ha van)
+  - Schedule ikon minden időpontnál
+  
+- **DurationCard** - Időtartam percben
+  - OutlinedTextField számokkal
+  - **Input validáció**: csak számok, pozitív érték
+  - Error state: piros border + supporting text
+  - supportingText: "Add meg az időtartamot percben"
+  
+- **StatusCard** - Státusz váltás
+  - 3 FilterChip: Tervezett, Befejezett, Kihagyott
+  - Selected state vizuálisan kiemelt
+  - onStatusChange callback
+  
+- **NotesCard** - Jegyzetek szerkesztése
+  - OutlinedTextField 120dp magas, max 5 sor
+  - **Karakterszám számláló**: "42 / 500"
+  - Max 500 karakter limit
+  - Színes jelzés (piros ha túllépi)
+  
+- **Mentés gomb**
+  - "Változtatások Mentése" text
+  - Loading state (CircularProgressIndicator)
+  - Disabled amikor isUpdating
+  
+- **Loading Screen**
+  - CircularProgressIndicator központosítva
+  - Megjelenik schedule betöltése közben
+  
+- **Navigation & Error Handling**
+  - Snackbar hibaüzenetekhez
+  - Automatikus navigáció vissza sikeres mentés után
+  - LaunchedEffect success/error kezelésre
+
+**Schedule Details Screen frissítés** ✅:
+- **Edit gomb aktiválva** TopAppBar-ban
+- Navigáció: `navController.navigate(Screen.EditSchedule.createRoute(scheduleId))`
+
+**Material 3 Design** követése minden komponensben
+
+**Megjegyzés**: Participants add/remove UI nincs implementálva (backend support megvan, későbbre halasztva)
+
+#### Package Struktúra (frissítve) ✅
+```
+com.progress.habittracker/
+├── data/
+│   ├── model/
+│   │   └── ScheduleModels.kt (UpdateScheduleRequest hozzáadva)
+│   ├── remote/
+│   │   └── ScheduleApiService.kt (updateSchedule endpoint)
+│   └── repository/
+│       └── ScheduleRepository.kt (updateSchedule metódus)
+├── navigation/
+│   └── NavGraph.kt (ScheduleDetails aktiválva)
+├── ui/
+│   ├── screens/
+│   │   ├── scheduledetails/
+│   │   │   └── ScheduleDetailsScreen.kt (Edit gomb aktiválva)
+│   │   └── editschedule/              # ✨ ÚJ
+│   │       └── EditScheduleScreen.kt
+│   └── viewmodel/
+│       ├── EditScheduleViewModel.kt         # ✨ ÚJ
+│       └── EditScheduleViewModelFactory.kt  # ✨ ÚJ
+```
+
+---
+
 ## Következő Lépések
 
-### 🎯 Most: Edit Schedule Screen
+### 🎯 Most: Profile Screen
 
-**Branch név**: `feature/edit-schedule`
+**Branch név**: `feature/profile-screen`
 
 **Elkészítendő funkciók:**
 
-1. **Edit Schedule Screen**
-   - Schedule adatok betöltése
-   - Start Time és End Time módosítása (TimePicker)
-   - Duration módosítása
-   - Státusz váltás: Planned / Completed / Skipped
-   - Participants/partners hozzáadása/eltávolítása
-   - Notes szerkesztése
-   - Mentés gomb -> PATCH /schedule/{id} -> vissza
-   - Validáció: kötelező mezők ellenőrzése
+1. **Profile Screen**
+   - Felhasználó profil adatok megjelenítése
+   - Habit-ek és progress ellenőrzése
+   - Új habit hozzáadás opció
+   - Logout funkció megerősítéssel
 
-**API-k**:
-- `ScheduleApiService.updateSchedule()` - PATCH /schedule/{id} (már létezik a ScheduleRepository-ban)
-- UpdateScheduleDto model létrehozása
-
-**Következő utána:**
-
-2. **Profile Screen**
-   - Felhasználó profilja
-   - Statisztikák
-   - Beállítások
-   - Logout funkció
-
-3. **Edit Profile Screen**
+2. **Edit Profile Screen**
    - Profil adatok szerkesztése
    - Profilkép feltöltés
+
+**API-k**:
+- `GET /profile` - Profil lekérése
+- `GET /habit/user/{userId}` - User habit-jei
+- `POST /auth/local/logout` - Logout
+- `PATCH /profile` - Profil frissítése (Edit Profile-hoz)
 
 ### Utána: További fejlesztések
 
