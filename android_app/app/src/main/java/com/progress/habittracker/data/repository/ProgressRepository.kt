@@ -33,8 +33,8 @@ class ProgressRepository(
         emit(Resource.Loading())
         
         try {
-            val token = tokenManager.getAccessToken().first()
-            if (token == null) {
+            val token = tokenManager.accessToken.first()
+            if (token.isNullOrEmpty()) {
                 emit(Resource.Error("Nincs bejelentkezve"))
                 return@flow
             }

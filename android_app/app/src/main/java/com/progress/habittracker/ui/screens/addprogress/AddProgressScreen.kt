@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -145,6 +146,8 @@ private fun DateCard(
     date: java.time.LocalDate,
     onDateChange: (java.time.LocalDate) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -157,13 +160,33 @@ private fun DateCard(
                 style = MaterialTheme.typography.titleMedium
             )
             
-            Text(
-                text = date.format(DateTimeFormatter.ofPattern("yyyy. MMMM dd.")),
-                style = MaterialTheme.typography.bodyLarge
-            )
+            // Date Picker Button
+            OutlinedButton(
+                onClick = {
+                    // Android DatePickerDialog
+                    android.app.DatePickerDialog(
+                        context,
+                        { _, year, month, dayOfMonth ->
+                            onDateChange(java.time.LocalDate.of(year, month + 1, dayOfMonth))
+                        },
+                        date.year,
+                        date.monthValue - 1,
+                        date.dayOfMonth
+                    ).show()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(date.format(DateTimeFormatter.ofPattern("yyyy. MMMM dd.")))
+            }
             
             Text(
-                text = "Alapértelmezett: mai nap",
+                text = "Kattints a dátum megváltoztatásához",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -179,6 +202,10 @@ private fun LoggedTimeCard(
     loggedTime: String,
     onLoggedTimeChange: (String) -> Unit
 ) {
+    // Validáció: csak számok és nem negatív
+    val isError = loggedTime.isNotEmpty() && 
+                  (loggedTime.toIntOrNull() == null || loggedTime.toIntOrNull()!! < 0)
+    
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -193,11 +220,20 @@ private fun LoggedTimeCard(
             
             OutlinedTextField(
                 value = loggedTime,
-                onValueChange = onLoggedTimeChange,
+                onValueChange = { newValue ->
+                    // Csak számokat engedélyezünk
+                    if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                        onLoggedTimeChange(newValue)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Perc (opcionális)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
+                singleLine = true,
+                isError = isError,
+                supportingText = if (isError) {
+                    { Text("Érvényes számot adj meg (0 vagy nagyobb)") }
+                } else null
             )
             
             Text(
@@ -217,6 +253,8 @@ private fun NotesCard(
     notes: String,
     onNotesChange: (String) -> Unit
 ) {
+    val maxLength = 500
+    
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -224,19 +262,42 @@ private fun NotesCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = "Jegyzetek",
-                style = MaterialTheme.typography.titleMedium
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Jegyzetek",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                
+                Text(
+                    text = "${notes.length} / $maxLength",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (notes.length > maxLength) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
             
             OutlinedTextField(
                 value = notes,
-                onValueChange = onNotesChange,
+                onValueChange = { newValue ->
+                    if (newValue.length <= maxLength) {
+                        onNotesChange(newValue)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
                 label = { Text("Jegyzetek (opcionális)") },
-                maxLines = 5
+                maxLines = 5,
+                supportingText = {
+                    Text("Max ${maxLength} karakter")
+                }
             )
         }
     }

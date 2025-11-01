@@ -57,6 +57,12 @@ fun ScheduleDetailsScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Progress lista automatikus frissítése amikor visszajövünk az AddProgress Screen-ről
+    val navBackStackEntry = navController.currentBackStackEntry
+    LaunchedEffect(navBackStackEntry) {
+        viewModel.refreshSchedule()
+    }
 
     // Ha sikeresen töröltük, navigáljunk vissza
     LaunchedEffect(uiState.deleteSuccess) {
