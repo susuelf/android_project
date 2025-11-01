@@ -1,42 +1,54 @@
 package com.progress.habittracker.ui.screens.editschedule
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.progress.habittracker.data.local.TokenManager
 import com.progress.habittracker.data.model.ScheduleStatus
 import com.progress.habittracker.data.repository.ScheduleRepository
+import com.progress.habittracker.ui.theme.DarkBackground
+import com.progress.habittracker.ui.theme.DarkSurface
+import com.progress.habittracker.ui.theme.PrimaryPurple
+import com.progress.habittracker.ui.theme.SuccessCyan
+import com.progress.habittracker.ui.theme.TextPrimary
+import com.progress.habittracker.ui.theme.TextSecondary
+import com.progress.habittracker.ui.theme.TextTertiary
 import com.progress.habittracker.ui.viewmodel.EditScheduleViewModel
 import com.progress.habittracker.ui.viewmodel.EditScheduleViewModelFactory
 import java.time.format.DateTimeFormatter
 
 /**
- * Edit Schedule Screen
+ * Edit Schedule Screen - Dark Theme
  * 
- * Schedule szerkesztése
+ * Schedule szerkesztése dark theme-el
  * 
- * Funkciók:
- * - Dátum módosítása
- * - Kezdési/befejezési időpont módosítása
- * - Időtartam módosítása
- * - Státusz váltás (Planned/Completed/Skipped)
- * - Jegyzetek szerkesztése
- * - Mentés
+ * Funkciók (spec szerint):
+ * - Start Time és End Time módosítása
+ * - Duration (időtartam) módosítása
+ * - Status beállítása: Planned, Completed, Skipped
+ * - Participants/Partners hozzáadása és eltávolítása
+ * - Notes szerkesztése
+ * - Mentés (PATCH /schedule/{id})
  * 
  * @param navController Navigációs kontroller
  * @param scheduleId Schedule azonosító
@@ -80,34 +92,44 @@ fun EditScheduleScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Schedule Szerkesztése") },
+                title = { Text("Edit Schedule", color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Vissza")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = TextPrimary
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = DarkBackground
+                )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = DarkBackground
     ) { paddingValues ->
         
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(paddingValues)
+                    .background(DarkBackground),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = PrimaryPurple)
             }
         } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
+                    .background(DarkBackground)
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 // Habit info (read-only)
                 uiState.schedule?.let { schedule ->
@@ -117,60 +139,72 @@ fun EditScheduleScreen(
                     )
                 }
                 
-                // Dátum kártya
-                DateCard(
-                    date = uiState.date,
-                    onDateChange = { viewModel.setDate(it) }
-                )
-                
-                // Időpont kártya
+                // Időpont kártya (Start & End Time)
                 TimeCard(
                     startTime = uiState.startTime,
                     endTime = uiState.endTime,
-                    onStartTimeChange = { viewModel.setStartTime(it) },
-                    onEndTimeChange = { viewModel.setEndTime(it) }
+                    onStartTimeChange = { viewModel.setStartTime(it) }
                 )
                 
-                // Időtartam
+                // Időtartam (Duration)
                 DurationCard(
                     duration = uiState.durationMinutes,
                     onDurationChange = { viewModel.setDuration(it) }
                 )
                 
-                // Státusz
+                // Státusz (Status: Planned/Completed/Skipped)
                 StatusCard(
                     status = uiState.status,
                     onStatusChange = { viewModel.setStatus(it) }
                 )
                 
-                // Jegyzetek
+                // Jegyzetek (Notes)
                 NotesCard(
                     notes = uiState.notes,
                     onNotesChange = { viewModel.setNotes(it) }
                 )
                 
+                // Résztvevők/Partnerek (Participants/Partners)
+                uiState.schedule?.let { schedule ->
+                    ParticipantsCard(
+                        participants = schedule.participants ?: emptyList(),
+                        onRemoveParticipant = { participantId ->
+                            viewModel.removeParticipant(participantId)
+                        }
+                    )
+                }
+                
                 // Mentés gomb
                 Button(
                     onClick = { viewModel.updateSchedule() },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isUpdating
+                    enabled = !uiState.isUpdating,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryPurple,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     if (uiState.isUpdating) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = Color.White,
+                            strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Mentés")
+                        Text("Save Changes", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
+                
+                // Extra padding
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }
 }
 
 /**
- * Habit info kártya (read-only)
+ * Habit info kártya (read-only) - Dark Theme
  */
 @Composable
 private fun HabitInfoCard(
@@ -180,174 +214,157 @@ private fun HabitInfoCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+            containerColor = DarkSurface
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 text = habitName,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                fontSize = 20.sp
             )
             Text(
                 text = categoryName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = TextSecondary,
+                fontSize = 14.sp
             )
         }
     }
 }
 
 /**
- * Dátum kártya
- */
-@Composable
-private fun DateCard(
-    date: java.time.LocalDate,
-    onDateChange: (java.time.LocalDate) -> Unit
-) {
-    val context = LocalContext.current
-    
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "Dátum",
-                style = MaterialTheme.typography.titleMedium
-            )
-            
-            OutlinedButton(
-                onClick = {
-                    android.app.DatePickerDialog(
-                        context,
-                        { _, year, month, dayOfMonth ->
-                            onDateChange(java.time.LocalDate.of(year, month + 1, dayOfMonth))
-                        },
-                        date.year,
-                        date.monthValue - 1,
-                        date.dayOfMonth
-                    ).show()
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CalendarToday,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(date.format(DateTimeFormatter.ofPattern("yyyy. MMMM dd.")))
-            }
-        }
-    }
-}
-
-/**
- * Időpont kártya
+ * Időpont kártya - Dark Theme
+ * Start Time szerkeszthető, End Time automatikusan számolódik (duration alapján)
  */
 @Composable
 private fun TimeCard(
     startTime: java.time.LocalTime,
     endTime: java.time.LocalTime?,
-    onStartTimeChange: (java.time.LocalTime) -> Unit,
-    onEndTimeChange: (java.time.LocalTime?) -> Unit
+    onStartTimeChange: (java.time.LocalTime) -> Unit
 ) {
     val context = LocalContext.current
     
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = DarkSurface
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Időpont",
-                style = MaterialTheme.typography.titleMedium
+                text = "Schedule Time",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                fontSize = 18.sp
             )
             
-            // Kezdési időpont
-            OutlinedButton(
-                onClick = {
-                    android.app.TimePickerDialog(
-                        context,
-                        { _, hour, minute ->
-                            onStartTimeChange(java.time.LocalTime.of(hour, minute))
-                        },
-                        startTime.hour,
-                        startTime.minute,
-                        true
-                    ).show()
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Schedule,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+            // Start Time (szerkeszthető)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Start Time",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    fontSize = 14.sp
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Kezdés: ${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))}")
+                OutlinedButton(
+                    onClick = {
+                        android.app.TimePickerDialog(
+                            context,
+                            { _, hour, minute ->
+                                onStartTimeChange(java.time.LocalTime.of(hour, minute))
+                            },
+                            startTime.hour,
+                            startTime.minute,
+                            true
+                        ).show()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = TextPrimary,
+                        containerColor = DarkBackground
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 1.dp,
+                        color = TextTertiary.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = SuccessCyan
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = startTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
             
-            // Befejezési időpont (opcionális)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Befejezés:",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+            // End Time (read-only, automatikusan számolódik)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "End Time",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary,
+                        fontSize = 14.sp
+                    )
+                    
+                    Text(
+                        text = "(Auto-calculated)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextTertiary,
+                        fontSize = 11.sp,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                    )
+                }
                 
-                if (endTime != null) {
+                // Read-only End Time megjelenítés
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            DarkBackground.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(16.dp)
+                ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = {
-                                android.app.TimePickerDialog(
-                                    context,
-                                    { _, hour, minute ->
-                                        onEndTimeChange(java.time.LocalTime.of(hour, minute))
-                                    },
-                                    endTime.hour,
-                                    endTime.minute,
-                                    true
-                                ).show()
-                            }
-                        ) {
-                            Text(endTime.format(DateTimeFormatter.ofPattern("HH:mm")))
-                        }
-                        
-                        TextButton(onClick = { onEndTimeChange(null) }) {
-                            Text("Törlés")
-                        }
-                    }
-                } else {
-                    TextButton(
-                        onClick = {
-                            android.app.TimePickerDialog(
-                                context,
-                                { _, hour, minute ->
-                                    onEndTimeChange(java.time.LocalTime.of(hour, minute))
-                                },
-                                startTime.hour,
-                                startTime.minute,
-                                true
-                            ).show()
-                        }
-                    ) {
-                        Text("+ Hozzáadás")
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = TextTertiary
+                        )
+                        Text(
+                            text = endTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "--:--",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextSecondary
+                        )
                     }
                 }
             }
@@ -356,26 +373,36 @@ private fun TimeCard(
 }
 
 /**
- * Időtartam kártya
+ * Időtartam kártya - Dark Theme
+ * Duration in minutes (max 480 perc = 8 óra)
  */
 @Composable
 private fun DurationCard(
     duration: Int,
     onDurationChange: (Int) -> Unit
 ) {
+    val maxDuration = 480 // Max 8 óra (480 perc)
     var durationText by remember(duration) { mutableStateOf(duration.toString()) }
-    val isError = durationText.toIntOrNull() == null || durationText.toIntOrNull()!! <= 0
+    val durationValue = durationText.toIntOrNull()
+    val isError = durationValue == null || durationValue <= 0 || durationValue > maxDuration
     
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = DarkSurface
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Időtartam (perc)",
-                style = MaterialTheme.typography.titleMedium
+                text = "Duration",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                fontSize = 18.sp
             )
             
             OutlinedTextField(
@@ -383,24 +410,48 @@ private fun DurationCard(
                 onValueChange = { newValue ->
                     if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
                         durationText = newValue
-                        newValue.toIntOrNull()?.let { onDurationChange(it) }
+                        newValue.toIntOrNull()?.let { value ->
+                            if (value in 1..maxDuration) {
+                                onDurationChange(value)
+                            }
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Perc") },
+                label = { Text("Minutes", color = TextTertiary) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 isError = isError,
-                supportingText = if (isError) {
-                    { Text("Érvényes számot adj meg (nagyobb mint 0)") }
-                } else null
+                supportingText = {
+                    when {
+                        durationValue == null || durationValue <= 0 -> 
+                            Text("Enter a valid number (greater than 0)", color = MaterialTheme.colorScheme.error)
+                        durationValue > maxDuration -> 
+                            Text("Maximum duration is $maxDuration minutes (8 hours)", color = MaterialTheme.colorScheme.error)
+                        else -> 
+                            Text("Max $maxDuration min (${maxDuration/60}h)", color = TextTertiary, fontSize = 11.sp)
+                    }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = DarkBackground,
+                    unfocusedContainerColor = DarkBackground,
+                    focusedBorderColor = PrimaryPurple,
+                    unfocusedBorderColor = TextTertiary.copy(alpha = 0.3f),
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    cursorColor = PrimaryPurple,
+                    errorBorderColor = MaterialTheme.colorScheme.error,
+                    errorTextColor = TextPrimary
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
         }
     }
 }
 
 /**
- * Státusz kártya
+ * Státusz kártya - Dark Theme
+ * Status: Planned, Completed, Skipped (spec szerint)
  */
 @Composable
 private fun StatusCard(
@@ -408,37 +459,104 @@ private fun StatusCard(
     onStatusChange: (ScheduleStatus) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = DarkSurface
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Státusz",
-                style = MaterialTheme.typography.titleMedium
+                text = "Status",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                fontSize = 18.sp
             )
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 FilterChip(
                     selected = status == ScheduleStatus.Planned,
                     onClick = { onStatusChange(ScheduleStatus.Planned) },
-                    label = { Text("Tervezett") }
+                    label = { 
+                        Text(
+                            "Planned",
+                            fontSize = 14.sp,
+                            fontWeight = if (status == ScheduleStatus.Planned) FontWeight.SemiBold else FontWeight.Normal
+                        ) 
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = DarkBackground,
+                        selectedContainerColor = PrimaryPurple.copy(alpha = 0.2f),
+                        labelColor = TextSecondary,
+                        selectedLabelColor = PrimaryPurple
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = status == ScheduleStatus.Planned,
+                        borderColor = TextTertiary.copy(alpha = 0.3f),
+                        selectedBorderColor = PrimaryPurple,
+                        borderWidth = 1.5.dp,
+                        selectedBorderWidth = 1.5.dp
+                    )
                 )
                 
                 FilterChip(
                     selected = status == ScheduleStatus.Completed,
                     onClick = { onStatusChange(ScheduleStatus.Completed) },
-                    label = { Text("Kész") }
+                    label = { 
+                        Text(
+                            "Completed",
+                            fontSize = 14.sp,
+                            fontWeight = if (status == ScheduleStatus.Completed) FontWeight.SemiBold else FontWeight.Normal
+                        ) 
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = DarkBackground,
+                        selectedContainerColor = SuccessCyan.copy(alpha = 0.2f),
+                        labelColor = TextSecondary,
+                        selectedLabelColor = SuccessCyan
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = status == ScheduleStatus.Completed,
+                        borderColor = TextTertiary.copy(alpha = 0.3f),
+                        selectedBorderColor = SuccessCyan,
+                        borderWidth = 1.5.dp,
+                        selectedBorderWidth = 1.5.dp
+                    )
                 )
                 
                 FilterChip(
                     selected = status == ScheduleStatus.Skipped,
                     onClick = { onStatusChange(ScheduleStatus.Skipped) },
-                    label = { Text("Kihagyva") }
+                    label = { 
+                        Text(
+                            "Skipped",
+                            fontSize = 14.sp,
+                            fontWeight = if (status == ScheduleStatus.Skipped) FontWeight.SemiBold else FontWeight.Normal
+                        ) 
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = DarkBackground,
+                        selectedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
+                        labelColor = TextSecondary,
+                        selectedLabelColor = MaterialTheme.colorScheme.error
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = status == ScheduleStatus.Skipped,
+                        borderColor = TextTertiary.copy(alpha = 0.3f),
+                        selectedBorderColor = MaterialTheme.colorScheme.error,
+                        borderWidth = 1.5.dp,
+                        selectedBorderWidth = 1.5.dp
+                    )
                 )
             }
         }
@@ -446,7 +564,8 @@ private fun StatusCard(
 }
 
 /**
- * Jegyzetek kártya
+ * Jegyzetek kártya - Dark Theme
+ * Notes editing (spec szerint)
  */
 @Composable
 private fun NotesCard(
@@ -456,11 +575,15 @@ private fun NotesCard(
     val maxLength = 500
     
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = DarkSurface
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -468,8 +591,11 @@ private fun NotesCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Jegyzetek",
-                    style = MaterialTheme.typography.titleMedium
+                    text = "Notes",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    fontSize = 18.sp
                 )
                 
                 Text(
@@ -478,8 +604,9 @@ private fun NotesCard(
                     color = if (notes.length > maxLength) {
                         MaterialTheme.colorScheme.error
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                        TextTertiary
+                    },
+                    fontSize = 12.sp
                 )
             }
             
@@ -492,12 +619,134 @@ private fun NotesCard(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
-                label = { Text("Jegyzetek (opcionális)") },
-                maxLines = 5,
-                supportingText = {
-                    Text("Max ${maxLength} karakter")
+                    .height(140.dp),
+                placeholder = { Text("Add notes here... (optional)", color = TextTertiary) },
+                maxLines = 6,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = DarkBackground,
+                    unfocusedContainerColor = DarkBackground,
+                    focusedBorderColor = PrimaryPurple,
+                    unfocusedBorderColor = TextTertiary.copy(alpha = 0.3f),
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    cursorColor = PrimaryPurple
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Résztvevők/Partnerek kártya - Dark Theme
+ * Participants/Partners management (spec szerint)
+ */
+@Composable
+private fun ParticipantsCard(
+    participants: List<com.progress.habittracker.data.model.ParticipantResponseDto>,
+    onRemoveParticipant: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = DarkSurface
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Partners",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                fontSize = 18.sp
+            )
+            
+            if (participants.isEmpty()) {
+                Text(
+                    text = "No partners added yet",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextTertiary,
+                    fontSize = 14.sp
+                )
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    participants.forEach { participant ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    DarkBackground,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // Avatar
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(
+                                            PrimaryPurple.copy(alpha = 0.3f),
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = participant.username.take(1).uppercase(),
+                                        color = PrimaryPurple,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                }
+                                
+                                Column {
+                                    Text(
+                                        text = participant.username,
+                                        color = TextPrimary,
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 14.sp
+                                    )
+                                    if (participant.email.isNotEmpty()) {
+                                        Text(
+                                            text = participant.email,
+                                            color = TextTertiary,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            IconButton(
+                                onClick = { onRemoveParticipant(participant.id) }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Remove partner",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
                 }
+            }
+            
+            // Note: Add partner functionality jelenleg nincs implementálva a backend-ben
+            Text(
+                text = "Note: Partners can be added when creating the schedule",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextTertiary,
+                fontSize = 11.sp,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
             )
         }
     }

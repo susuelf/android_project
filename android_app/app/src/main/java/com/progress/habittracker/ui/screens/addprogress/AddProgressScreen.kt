@@ -1,37 +1,53 @@
 package com.progress.habittracker.ui.screens.addprogress
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.progress.habittracker.data.local.TokenManager
 import com.progress.habittracker.data.repository.ProgressRepository
+import com.progress.habittracker.data.repository.ScheduleRepository
+import com.progress.habittracker.ui.theme.DarkBackground
+import com.progress.habittracker.ui.theme.DarkSurface
+import com.progress.habittracker.ui.theme.PrimaryPurple
+import com.progress.habittracker.ui.theme.SuccessCyan
+import com.progress.habittracker.ui.theme.TextPrimary
+import com.progress.habittracker.ui.theme.TextSecondary
+import com.progress.habittracker.ui.theme.TextTertiary
 import com.progress.habittracker.ui.viewmodel.AddProgressViewModel
 import com.progress.habittracker.ui.viewmodel.AddProgressViewModelFactory
 import java.time.format.DateTimeFormatter
 
 /**
- * Add Progress Screen
+ * Add Progress Screen - Dark Theme
  * 
- * Progress (haladás) hozzáadása egy schedule-hoz
+ * Update your progress for a schedule
  * 
- * Funkciók:
- * - Dátum választás
- * - Eltöltött idő megadása (opcionális)
- * - Jegyzetek hozzáadása (opcionális)
- * - Completed checkbox
- * - Progress mentése
+ * Funkciók (spec szerint):
+ * - Log time spent on activity (kötelező)
+ * - Add optional notes
+ * - Counts towards the completion of a schedule based on time
+ * - Progress = completed work (isCompleted mindig true)
+ * 
+ * Backend: POST /progress
+ * Required: scheduleId, date, logged_time
+ * Optional: notes
+ * Fixed: is_completed = true
  * 
  * @param navController Navigációs kontroller
  * @param scheduleId Schedule azonosító
@@ -45,10 +61,11 @@ fun AddProgressScreen(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val tokenManager = remember { TokenManager(context) }
+    val scheduleRepository = remember { ScheduleRepository(tokenManager) }
     val progressRepository = remember { ProgressRepository(tokenManager) }
     
     val viewModel: AddProgressViewModel = viewModel(
-        factory = AddProgressViewModelFactory(scheduleId, progressRepository)
+        factory = AddProgressViewModelFactory(scheduleId, scheduleRepository, progressRepository)
     )
     
     val uiState by viewModel.uiState.collectAsState()
@@ -77,176 +94,178 @@ fun AddProgressScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Progress Hozzáadása") },
+                title = { Text("Add Progress", color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Vissza")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = TextPrimary
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = DarkBackground
+                )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = DarkBackground
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(DarkBackground)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 24.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Dátum kártya
-            DateCard(
-                date = uiState.date,
-                onDateChange = { viewModel.setDate(it) }
+            // Info header
+            Text(
+                text = "Update your progress",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                fontSize = 22.sp
             )
             
-            // Eltöltött idő
+            Text(
+                text = "Log the time you spent on this activity. Progress represents actual completed work.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Logged Time (kötelező) - max a hátralévő idő
+            val maxDuration = uiState.maxAllowedTime
             LoggedTimeCard(
                 loggedTime = uiState.loggedTime,
+                maxDuration = maxDuration,
                 onLoggedTimeChange = { viewModel.setLoggedTime(it) }
             )
             
-            // Jegyzetek
+            // Notes (opcionális)
             NotesCard(
                 notes = uiState.notes,
                 onNotesChange = { viewModel.setNotes(it) }
             )
             
-            // Completed checkbox
-            CompletedCard(
-                isCompleted = uiState.isCompleted,
-                onToggle = { viewModel.toggleCompleted() }
-            )
+            Spacer(modifier = Modifier.height(8.dp))
             
-            // Mentés gomb
+            // Save button
             Button(
                 onClick = { viewModel.createProgress() },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !uiState.isCreating
+                enabled = !uiState.isCreating,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SuccessCyan,
+                    contentColor = DarkBackground
+                ),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(vertical = 16.dp)
             ) {
                 if (uiState.isCreating) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = DarkBackground,
+                        strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Progress Mentése")
+                    Text(
+                        "Save Progress",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
+            
+            // Extra padding
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
 
 /**
- * Dátum választó kártya
- */
-@Composable
-private fun DateCard(
-    date: java.time.LocalDate,
-    onDateChange: (java.time.LocalDate) -> Unit
-) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "Dátum",
-                style = MaterialTheme.typography.titleMedium
-            )
-            
-            // Date Picker Button
-            OutlinedButton(
-                onClick = {
-                    // Android DatePickerDialog
-                    android.app.DatePickerDialog(
-                        context,
-                        { _, year, month, dayOfMonth ->
-                            onDateChange(java.time.LocalDate.of(year, month + 1, dayOfMonth))
-                        },
-                        date.year,
-                        date.monthValue - 1,
-                        date.dayOfMonth
-                    ).show()
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CalendarToday,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(date.format(DateTimeFormatter.ofPattern("yyyy. MMMM dd.")))
-            }
-            
-            Text(
-                text = "Kattints a dátum megváltoztatásához",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-/**
- * Eltöltött idő kártya
+ * Logged Time Card - Dark Theme
+ * Time spent in minutes (required, max = schedule duration)
  */
 @Composable
 private fun LoggedTimeCard(
     loggedTime: String,
+    maxDuration: Int,
     onLoggedTimeChange: (String) -> Unit
 ) {
-    // Validáció: csak számok és nem negatív
-    val isError = loggedTime.isNotEmpty() && 
-                  (loggedTime.toIntOrNull() == null || loggedTime.toIntOrNull()!! < 0)
+    val timeValue = loggedTime.toIntOrNull()
+    val isError = loggedTime.isEmpty() || timeValue == null || timeValue <= 0 || timeValue > maxDuration
     
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = DarkSurface
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Eltöltött idő (perc)",
-                style = MaterialTheme.typography.titleMedium
+                text = "Time Spent *",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                fontSize = 18.sp
             )
             
             OutlinedTextField(
                 value = loggedTime,
                 onValueChange = { newValue ->
-                    // Csak számokat engedélyezünk
                     if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
                         onLoggedTimeChange(newValue)
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Perc (opcionális)") },
+                label = { Text("Minutes (required)", color = TextTertiary) },
+                placeholder = { Text("e.g., 30", color = TextTertiary.copy(alpha = 0.5f)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 isError = isError,
-                supportingText = if (isError) {
-                    { Text("Érvényes számot adj meg (0 vagy nagyobb)") }
-                } else null
-            )
-            
-            Text(
-                text = "Ha üres, csak a befejezettséget rögzítjük",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                supportingText = {
+                    when {
+                        loggedTime.isEmpty() ->
+                            Text("Time spent is required", color = MaterialTheme.colorScheme.error)
+                        timeValue != null && timeValue <= 0 -> 
+                            Text("Enter a positive number", color = MaterialTheme.colorScheme.error)
+                        timeValue != null && timeValue > maxDuration -> 
+                            Text("Cannot exceed remaining time ($maxDuration min)", color = MaterialTheme.colorScheme.error)
+                        else -> 
+                            Text("Max $maxDuration min (remaining time)", color = TextTertiary, fontSize = 11.sp)
+                    }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = DarkBackground,
+                    unfocusedContainerColor = DarkBackground,
+                    focusedBorderColor = SuccessCyan,
+                    unfocusedBorderColor = TextTertiary.copy(alpha = 0.3f),
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    cursorColor = SuccessCyan,
+                    errorBorderColor = MaterialTheme.colorScheme.error,
+                    errorTextColor = TextPrimary
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
         }
     }
 }
 
 /**
- * Jegyzetek kártya
+ * Notes Card - Dark Theme
+ * Optional notes for the progress update
  */
 @Composable
 private fun NotesCard(
@@ -256,11 +275,15 @@ private fun NotesCard(
     val maxLength = 500
     
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = DarkSurface
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -268,8 +291,11 @@ private fun NotesCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Jegyzetek",
-                    style = MaterialTheme.typography.titleMedium
+                    text = "Notes",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    fontSize = 18.sp
                 )
                 
                 Text(
@@ -278,8 +304,9 @@ private fun NotesCard(
                     color = if (notes.length > maxLength) {
                         MaterialTheme.colorScheme.error
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                        TextTertiary
+                    },
+                    fontSize = 12.sp
                 )
             }
             
@@ -292,58 +319,26 @@ private fun NotesCard(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
-                label = { Text("Jegyzetek (opcionális)") },
-                maxLines = 5,
-                supportingText = {
-                    Text("Max ${maxLength} karakter")
-                }
+                    .height(140.dp),
+                placeholder = { 
+                    Text(
+                        "Add notes about your progress... (optional)",
+                        color = TextTertiary.copy(alpha = 0.5f)
+                    ) 
+                },
+                maxLines = 6,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = DarkBackground,
+                    unfocusedContainerColor = DarkBackground,
+                    focusedBorderColor = SuccessCyan,
+                    unfocusedBorderColor = TextTertiary.copy(alpha = 0.3f),
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    cursorColor = SuccessCyan
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
         }
     }
 }
 
-/**
- * Befejezett checkbox kártya
- */
-@Composable
-private fun CompletedCard(
-    isCompleted: Boolean,
-    onToggle: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = "Befejezett",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                
-                Text(
-                    text = if (isCompleted) {
-                        "Ez a progress befejezettként lesz rögzítve"
-                    } else {
-                        "Ez a progress folyamatban lévőként lesz rögzítve"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            Switch(
-                checked = isCompleted,
-                onCheckedChange = { onToggle() }
-            )
-        }
-    }
-}

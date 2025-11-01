@@ -14,213 +14,140 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 /**
- * ViewModel az Edit Profile Screen-hez
- * 
- * Funkciók:
- * - Profil adatok betöltése
- * - Username szerkesztése
- * - Description szerkesztése
- * - Profilkép feltöltése
- * - Profil mentése
+ * Edit Profile ViewModel
+ *
+ * - Profil betöltése
+ * - Kép kiválasztása és feltöltése
+ * - Username/description mentése
  */
 class EditProfileViewModel(
-    private val profileRepository: ProfileRepository
+	private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
-    /**
-     * UI State data class
-     */
-    data class EditProfileUiState(
-        val profile: ProfileResponseDto? = null,
-        val username: String = "",
-        val description: String = "",
-        val selectedImageFile: File? = null,
-        val isLoading: Boolean = false,
-        val isUpdating: Boolean = false,
-        val isUploadingImage: Boolean = false,
-        val updateSuccess: Boolean = false,
-        val error: String? = null
-    )
+	data class EditProfileUiState(
+		val isLoading: Boolean = false,
+		val isUpdating: Boolean = false,
+		val isUploadingImage: Boolean = false,
+		val updateSuccess: Boolean = false,
+		val error: String? = null,
 
-    private val _uiState = MutableStateFlow(EditProfileUiState())
-    val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
+		val profile: ProfileResponseDto? = null,
+		val username: String = "",
+		val description: String = "",
+		val selectedImageFile: File? = null
+	)
 
-    init {
-        loadProfile()
-    }
+	private val _uiState = MutableStateFlow(EditProfileUiState())
+	val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
 
-    /**
-     * Profil adatok betöltése
-     */
-    fun loadProfile() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+	init {
+		loadProfile()
+	}
 
-            profileRepository.getMyProfile().collect { resource ->
-                when (resource) {
-                    is Resource.Loading -> {
-                        _uiState.update { it.copy(isLoading = true, error = null) }
-                    }
+	fun loadProfile() {
+		viewModelScope.launch {
+			profileRepository.getMyProfile().collect { resource ->
+				when (resource) {
+					is Resource.Loading -> _uiState.update { it.copy(isLoading = true, error = null) }
+					is Resource.Success -> {
+						val profile = resource.data
+						_uiState.update {
+							it.copy(
+								isLoading = false,
+								profile = profile,
+								username = profile?.username ?: "",
+								description = profile?.description ?: "",
+								error = null
+							)
+						}
+					}
+					is Resource.Error -> _uiState.update {
+						it.copy(isLoading = false, error = resource.message ?: "Hiba történt")
+					}
+				}
+			}
+		}
+	}
 
-                    is Resource.Success -> {
-                        val profile = resource.data
-                        _uiState.update {
-                            it.copy(
-                                profile = profile,
-                                username = profile?.username ?: "",
-                                description = profile?.description ?: "",
-                                isLoading = false,
-                                error = null
-                            )
-                        }
-                    }
+	fun setUsername(value: String) {
+		_uiState.update { it.copy(username = value) }
+	}
 
-                    is Resource.Error -> {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                error = resource.message ?: "Hiba történt a profil betöltése közben"
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+	fun setDescription(value: String) {
+		_uiState.update { it.copy(description = value) }
+	}
 
-    /**
-     * Username beállítása
-     */
-    fun setUsername(username: String) {
-        _uiState.update { it.copy(username = username) }
-    }
+	/**
+	 * Kép kiválasztása és azonnali feltöltése a szerverre
+	 * Siker esetén a szerver visszaadja az új profileImageUrl-t
+	 */
+	fun selectImage(file: File) {
+		// Először lokálisan állítsuk be, hogy azonnal látszódjon a preview
+		_uiState.update { it.copy(selectedImageFile = file) }
 
-    /**
-     * Description beállítása
-     */
-    fun setDescription(description: String) {
-        _uiState.update { it.copy(description = description) }
-    }
+		viewModelScope.launch {
+			profileRepository.uploadProfileImage(file).collect { resource ->
+				when (resource) {
+					is Resource.Loading -> _uiState.update { it.copy(isUploadingImage = true, error = null) }
+					is Resource.Success -> {
+						val updated = resource.data
+						_uiState.update {
+							it.copy(
+								isUploadingImage = false,
+								profile = updated,
+								// Feltöltés sikerült -> törölhetjük a lokális file referenciát, a szerver URL él
+								selectedImageFile = null,
+								// reseteljük a success flag-et, itt nem navigálunk
+								updateSuccess = false,
+								error = null
+							)
+						}
+					}
+					is Resource.Error -> _uiState.update {
+						it.copy(isUploadingImage = false, error = resource.message ?: "Kép feltöltési hiba")
+					}
+				}
+			}
+		}
+	}
 
-    /**
-     * Profilkép kiválasztása
-     */
-    fun selectImage(imageFile: File) {
-        _uiState.update { it.copy(selectedImageFile = imageFile) }
-    }
+	/**
+	 * Username/description mentése
+	 */
+	fun saveProfile() {
+		val username = _uiState.value.username
+		val description = _uiState.value.description
 
-    /**
-     * Profil adatok mentése
-     * 
-     * Ha van kiválasztott kép, először azt feltölti, majd frissíti az adatokat.
-     * Ha nincs kép, csak az adatokat frissíti.
-     */
-    fun saveProfile() {
-        val currentState = _uiState.value
-        
-        // Validáció
-        if (currentState.username.isBlank()) {
-            _uiState.update { it.copy(error = "A felhasználónév nem lehet üres") }
-            return
-        }
+		viewModelScope.launch {
+			profileRepository.updateProfile(
+				UpdateProfileRequest(
+					username = username,
+					description = description
+				)
+			).collect { resource ->
+				when (resource) {
+					is Resource.Loading -> _uiState.update { it.copy(isUpdating = true, error = null, updateSuccess = false) }
+					is Resource.Success -> {
+						val updated = resource.data
+						_uiState.update {
+							it.copy(
+								isUpdating = false,
+								profile = updated,
+								updateSuccess = true,
+								error = null
+							)
+						}
+					}
+					is Resource.Error -> _uiState.update {
+						it.copy(isUpdating = false, updateSuccess = false, error = resource.message ?: "Mentési hiba")
+					}
+				}
+			}
+		}
+	}
 
-        viewModelScope.launch {
-            // Ha van kiválasztott kép, először azt feltöltjük
-            if (currentState.selectedImageFile != null) {
-                uploadProfileImage(currentState.selectedImageFile)
-            }
-            
-            // Majd frissítjük a profil adatokat
-            updateProfileData()
-        }
-    }
-
-    /**
-     * Profilkép feltöltése
-     */
-    private suspend fun uploadProfileImage(imageFile: File) {
-        _uiState.update { it.copy(isUploadingImage = true, error = null) }
-
-        profileRepository.uploadProfileImage(imageFile).collect { resource ->
-            when (resource) {
-                is Resource.Loading -> {
-                    _uiState.update { it.copy(isUploadingImage = true) }
-                }
-
-                is Resource.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            profile = resource.data,
-                            isUploadingImage = false,
-                            selectedImageFile = null
-                        )
-                    }
-                }
-
-                is Resource.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            isUploadingImage = false,
-                            error = resource.message ?: "Hiba történt a kép feltöltése közben"
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Profil adatok frissítése (username, description)
-     */
-    private suspend fun updateProfileData() {
-        val currentState = _uiState.value
-        
-        val request = UpdateProfileRequest(
-            username = currentState.username.takeIf { it != currentState.profile?.username },
-            description = currentState.description.takeIf { it != currentState.profile?.description }
-        )
-        
-        // Ha semmi nem változott, ne küldjünk API hívást
-        if (request.username == null && request.description == null) {
-            _uiState.update { it.copy(updateSuccess = true) }
-            return
-        }
-
-        _uiState.update { it.copy(isUpdating = true, error = null) }
-
-        profileRepository.updateProfile(request).collect { resource ->
-            when (resource) {
-                is Resource.Loading -> {
-                    _uiState.update { it.copy(isUpdating = true) }
-                }
-
-                is Resource.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            profile = resource.data,
-                            isUpdating = false,
-                            updateSuccess = true,
-                            error = null
-                        )
-                    }
-                }
-
-                is Resource.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            isUpdating = false,
-                            error = resource.message ?: "Hiba történt a profil frissítése közben"
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Hiba üzenet törlése
-     */
-    fun clearError() {
-        _uiState.update { it.copy(error = null) }
-    }
+	fun clearError() {
+		_uiState.update { it.copy(error = null) }
+	}
 }
+

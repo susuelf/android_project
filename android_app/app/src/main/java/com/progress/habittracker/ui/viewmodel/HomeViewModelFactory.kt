@@ -2,25 +2,28 @@ package com.progress.habittracker.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.progress.habittracker.data.repository.ProgressRepository
 import com.progress.habittracker.data.repository.ScheduleRepository
 
 /**
  * Home ViewModel Factory
  * 
  * ViewModelProvider.Factory implementáció a HomeViewModel példányosításához.
- * Szükséges mert a HomeViewModel konstruktor paraméterekkel rendelkezik (ScheduleRepository).
+ * Szükséges mert a HomeViewModel konstruktor paraméterekkel rendelkezik.
  * 
  * Használat:
  * ```
  * val viewModel: HomeViewModel = viewModel(
- *     factory = HomeViewModelFactory(scheduleRepository)
+ *     factory = HomeViewModelFactory(scheduleRepository, progressRepository)
  * )
  * ```
  * 
- * @property repository Schedule repository instance
+ * @property scheduleRepository Schedule repository instance
+ * @property progressRepository Progress repository instance
  */
 class HomeViewModelFactory(
-    private val repository: ScheduleRepository
+    private val scheduleRepository: ScheduleRepository,
+    private val progressRepository: ProgressRepository
 ) : ViewModelProvider.Factory {
     
     /**
@@ -34,8 +37,8 @@ class HomeViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         // Ellenőrizzük hogy HomeViewModel típust kérnek-e
         if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-            // HomeViewModel létrehozása repository-val
-            return HomeViewModel(repository) as T
+            // HomeViewModel létrehozása repositoryval
+            return HomeViewModel(scheduleRepository, progressRepository) as T
         }
         
         // Ismeretlen ViewModel típus

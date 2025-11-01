@@ -53,6 +53,7 @@ class EditScheduleViewModel(
         val durationMinutes: Int = 30,
         val status: ScheduleStatus = ScheduleStatus.Planned,
         val notes: String = "",
+        val participantIds: List<Int> = emptyList(), // Résztvevők ID listája
         val isLoading: Boolean = false,
         val isUpdating: Boolean = false,
         val updateSuccess: Boolean = false,
@@ -87,6 +88,7 @@ class EditScheduleViewModel(
                                 durationMinutes = schedule.durationMinutes ?: 30,
                                 status = schedule.status,
                                 notes = schedule.notes ?: "",
+                                participantIds = schedule.participants?.map { p -> p.id } ?: emptyList(),
                                 isLoading = false,
                                 error = null
                             )
@@ -114,23 +116,32 @@ class EditScheduleViewModel(
     
     /**
      * Kezdési időpont beállítása
+     * Automatikusan újraszámolja az End Time-ot a duration alapján
      */
     fun setStartTime(time: LocalTime) {
-        _uiState.update { it.copy(startTime = time) }
-    }
-    
-    /**
-     * Befejezési időpont beállítása
-     */
-    fun setEndTime(time: LocalTime?) {
-        _uiState.update { it.copy(endTime = time) }
+        val state = _uiState.value
+        val newEndTime = time.plusMinutes(state.durationMinutes.toLong())
+        _uiState.update { 
+            it.copy(
+                startTime = time,
+                endTime = newEndTime
+            ) 
+        }
     }
     
     /**
      * Időtartam beállítása
+     * Automatikusan újraszámolja az End Time-ot a start time alapján
      */
     fun setDuration(minutes: Int) {
-        _uiState.update { it.copy(durationMinutes = minutes) }
+        val state = _uiState.value
+        val newEndTime = state.startTime.plusMinutes(minutes.toLong())
+        _uiState.update { 
+            it.copy(
+                durationMinutes = minutes,
+                endTime = newEndTime
+            ) 
+        }
     }
     
     /**
@@ -145,6 +156,28 @@ class EditScheduleViewModel(
      */
     fun setNotes(notes: String) {
         _uiState.update { it.copy(notes = notes) }
+    }
+    
+    /**
+     * Résztvevő eltávolítása
+     */
+    fun removeParticipant(participantId: Int) {
+        _uiState.update { 
+            it.copy(
+                participantIds = it.participantIds.filter { id -> id != participantId }
+            ) 
+        }
+    }
+    
+    /**
+     * Résztvevő hozzáadása (későbbi fejlesztéshez)
+     */
+    fun addParticipant(participantId: Int) {
+        _uiState.update { 
+            it.copy(
+                participantIds = it.participantIds + participantId
+            ) 
+        }
     }
     
     /**
@@ -164,7 +197,8 @@ class EditScheduleViewModel(
                 durationMinutes = state.durationMinutes,
                 status = state.status.name,
                 date = "${state.date}T00:00:00",
-                notes = state.notes.takeIf { it.isNotBlank() }
+                notes = state.notes.takeIf { it.isNotBlank() },
+                participantIds = state.participantIds.takeIf { it.isNotEmpty() }
             )
             
             scheduleRepository.updateSchedule(scheduleId, request).collect { resource ->

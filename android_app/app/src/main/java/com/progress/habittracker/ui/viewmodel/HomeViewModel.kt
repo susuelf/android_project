@@ -2,8 +2,10 @@ package com.progress.habittracker.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.progress.habittracker.data.model.CreateProgressRequest
 import com.progress.habittracker.data.model.ScheduleResponseDto
 import com.progress.habittracker.data.model.ScheduleStatus
+import com.progress.habittracker.data.repository.ProgressRepository
 import com.progress.habittracker.data.repository.ScheduleRepository
 import com.progress.habittracker.util.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,10 +21,12 @@ import java.time.format.DateTimeFormatter
  * ViewModel a Home Screen state management-jéhez.
  * Kezeli a napi schedule-ok betöltését és a UI state-et.
  * 
- * @property repository Schedule repository az API kommunikációhoz
+ * @property scheduleRepository Schedule repository az API kommunikációhoz
+ * @property progressRepository Progress repository az auto-completion-höz
  */
 class HomeViewModel(
-    private val repository: ScheduleRepository
+    private val scheduleRepository: ScheduleRepository,
+    private val progressRepository: ProgressRepository
 ) : ViewModel() {
     
     /**
@@ -81,7 +85,7 @@ class HomeViewModel(
             val dateString = targetDate.format(dateFormatter)
             
             // Repository Flow collect
-            repository.getSchedulesByDay(dateString).collect { resource ->
+            scheduleRepository.getSchedulesByDay(dateString).collect { resource ->
                 when (resource) {
                     is Resource.Loading -> {
                         // Betöltés állapot
@@ -163,39 +167,78 @@ class HomeViewModel(
     
     /**
      * Schedule státusz váltása (Checkbox toggle)
-     * 
-     * Planned <-> Completed váltás egy schedule-nál.
-     * 
+     *
+     * Követelmények:
+     * - Két esetben lehet 100% a progress bar:
+     *   1) Ha a felhasználó manuálisan kipipálja a schedule-t a Home screenen (visszavonható, amíg a progress nem éri el a maxot)
+     *   2) Ha a progress természetesen eléri a maximumot (össz-idő >= duration) – ekkor véglegesen teljesített és NEM vonható vissza
+     *
+     * Megvalósítás:
+     * - Planned -> Completed: CSAK státusz váltás (NEM hozunk létre 100% progress rekordot), így a progress alatta megmarad az eddig bevitt időn
+     * - Completed -> Planned: csak akkor engedélyezett, ha a progress NEM érte el a maximumot (különben elutasítjuk)
+     *
      * @param scheduleId A schedule ID-ja
      * @param currentStatus Jelenlegi státusz
      */
     fun toggleScheduleStatus(scheduleId: Int, currentStatus: ScheduleStatus) {
         viewModelScope.launch {
-            // Új státusz meghatározása
-            val newStatus = when (currentStatus) {
-                ScheduleStatus.Planned -> "Completed"
-                ScheduleStatus.Completed -> "Planned"
-                ScheduleStatus.Skipped -> "Planned" // Skipped -> Planned
-            }
+            // Keressük meg a schedule-t
+            val schedule = _uiState.value.schedules.find { it.id == scheduleId }
             
-            // Repository hívás
-            repository.updateScheduleStatus(scheduleId, newStatus).collect { resource ->
-                when (resource) {
-                    is Resource.Success -> {
-                        // Sikeres frissítés -> újra betöltjük a listát
-                        loadSchedules()
-                    }
-                    
-                    is Resource.Error -> {
-                        // Hiba történt
+            if (schedule == null) return@launch
+
+            // Összes completed logged time és a duration kiszámítása
+            val totalLoggedTime = schedule.progress?.filter { it.isCompleted }?.sumOf { it.loggedTime ?: 0 } ?: 0
+            val duration = schedule.durationMinutes ?: 0
+            val isProgressComplete = duration > 0 && totalLoggedTime >= duration
+
+            when (currentStatus) {
+                ScheduleStatus.Planned -> {
+                    // Planned -> Completed: csak státusz váltás (nem hozunk létre progress-t)
+                    updateScheduleStatus(scheduleId, "Completed")
+                }
+
+                ScheduleStatus.Completed -> {
+                    // Completed -> Planned: csak akkor engedjük, ha a progress még nem 100%
+                    if (isProgressComplete) {
+                        // Nem engedjük visszavonni, mert a progress már tele van
                         _uiState.value = _uiState.value.copy(
-                            error = resource.message
+                            error = _uiState.value.error // opcionálisan adhatnánk üzenetet
                         )
+                        // Semmit nem csinálunk
+                    } else {
+                        updateScheduleStatus(scheduleId, "Planned")
                     }
-                    
-                    is Resource.Loading -> {
-                        // Betöltés - nem kell kezelni itt
-                    }
+                }
+
+                ScheduleStatus.Skipped -> {
+                    // Skipped -> Planned
+                    updateScheduleStatus(scheduleId, "Planned")
+                }
+            }
+        }
+    }
+    
+    /**
+     * Schedule státusz frissítése (helper)
+     */
+    private suspend fun updateScheduleStatus(scheduleId: Int, newStatus: String) {
+        scheduleRepository.updateScheduleStatus(scheduleId, newStatus).collect { resource ->
+            when (resource) {
+                is Resource.Success -> {
+                    // Sikeres frissítés -> újra betöltjük a listát
+                    loadSchedules()
+                }
+                
+                is Resource.Error -> {
+                    // Hiba történt
+                    _uiState.value = _uiState.value.copy(
+                        error = resource.message
+                    )
+                }
+                
+                is Resource.Loading -> {
+                    // Betöltés - nem kell kezelni itt
                 }
             }
         }

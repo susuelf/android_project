@@ -3,6 +3,7 @@ package com.progress.habittracker.ui.screens.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -12,27 +13,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.progress.habittracker.data.model.*
+import com.progress.habittracker.ui.theme.DarkSurface
+import com.progress.habittracker.ui.theme.HabitBlue
 import com.progress.habittracker.ui.theme.Progr3SSTheme
+import com.progress.habittracker.ui.theme.SuccessCyan
+import com.progress.habittracker.ui.theme.TextPrimary
+import com.progress.habittracker.ui.theme.TextSecondary
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /**
- * Schedule Item Card
+ * Schedule Item Card (Design frissítve - Dark Theme)
  * 
  * Egy schedule megjelenítése kártya formátumban a Home Screen-en.
  * 
  * Funkciók:
- * - Habit név és kategória megjelenítése
- * - Időpont kijelzése (start time, duration)
- * - Státusz jelzés (checkbox icon)
- * - Státusz színezés (Completed = zöld, Planned = szürke, Skipped = piros)
+ * - Habit név és időpont megjelenítése
+ * - Dark surface háttér (#2A2A3E)
+ * - Habit ikon színes körben (bal oldal)
+ * - Időpont és habit név (középen)
+ * - Státusz checkbox (jobb oldal) - zöld pipa ha kész, üres kör ha nem
  * - Kattintható -> Schedule Details Screen
- * - Checkbox toggle -> státusz váltás
  * 
  * @param schedule A megjelenítendő schedule adatai
  * @param onScheduleClick Kártya kattintás callback (navigáció Details-re)
@@ -46,28 +54,35 @@ fun ScheduleItemCard(
     onStatusToggle: (Int, ScheduleStatus) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Státusz alapú színezés
-    val containerColor = when (schedule.status) {
-        ScheduleStatus.Completed -> MaterialTheme.colorScheme.primaryContainer
-        ScheduleStatus.Skipped -> MaterialTheme.colorScheme.errorContainer
-        ScheduleStatus.Planned -> MaterialTheme.colorScheme.surfaceVariant
-    }
+    // Progress percentage számítás (időalapú)
+    val totalLoggedTime = schedule.progress
+        ?.filter { it.isCompleted }
+        ?.sumOf { it.loggedTime ?: 0 } ?: 0
+    val scheduleDuration = schedule.durationMinutes ?: 1
+    val progressPercentage = ((totalLoggedTime.toFloat() / scheduleDuration.toFloat()) * 100f).coerceIn(0f, 100f)
     
-    val contentColor = when (schedule.status) {
-        ScheduleStatus.Completed -> MaterialTheme.colorScheme.onPrimaryContainer
-        ScheduleStatus.Skipped -> MaterialTheme.colorScheme.onErrorContainer
-        ScheduleStatus.Planned -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    // Progress 100% ha van elég logged time
+    val isProgressComplete = totalLoggedTime >= scheduleDuration
+    
+    // Automatikus Completed státusz ha progress 100%
+    val effectiveStatus = if (isProgressComplete) ScheduleStatus.Completed else schedule.status
+    
+    // Csak akkor disabled ha a progress ténylegesen 100% (nem csak checkbox)
+    val isDisabled = isProgressComplete
+    
+    // Habit ikon szín (alapból HabitBlue, kategória szerint variálható)
+    val habitIconColor = HabitBlue // Később kategória alapján lehet testreszabni
     
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onScheduleClick(schedule.id) },
         colors = CardDefaults.cardColors(
-            containerColor = containerColor,
-            contentColor = contentColor
+            containerColor = DarkSurface,
+            contentColor = TextPrimary
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -76,29 +91,25 @@ fun ScheduleItemCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bal oldal: Időpont oszlop
-            Column(
-                modifier = Modifier.width(80.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Bal oldal: Habit ikon színes körben
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(habitIconColor.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
             ) {
-                // Start time
+                // Habit első betűje vagy emoji (később lehet kategória ikon)
                 Text(
-                    text = formatTime(schedule.startTime),
+                    text = schedule.habit.name.firstOrNull()?.uppercase() ?: "H",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = habitIconColor,
+                    fontSize = 20.sp
                 )
-                
-                // Duration (ha van)
-                schedule.durationMinutes?.let { duration ->
-                    Text(
-                        text = "${duration}p",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = contentColor.copy(alpha = 0.7f)
-                    )
-                }
             }
             
-            // Középső rész: Habit információk
+            // Középső rész: Habit név és időpont
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -107,54 +118,48 @@ fun ScheduleItemCard(
                 // Habit név
                 Text(
                     text = schedule.habit.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimary,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    fontSize = 16.sp
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                // Kategória név
+                // Időpont
                 Text(
-                    text = schedule.habit.category.name,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.8f)
+                    text = formatTime(schedule.startTime),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    fontSize = 14.sp
                 )
-                
-                // Goal (ha van)
-                schedule.habit.goal?.let { goal ->
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = goal,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = contentColor.copy(alpha = 0.6f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
             }
             
             // Jobb oldal: Státusz checkbox
             IconButton(
-                onClick = { onStatusToggle(schedule.id, schedule.status) }
+                onClick = { onStatusToggle(schedule.id, schedule.status) },
+                enabled = !isDisabled, // Csak ha progress NEM 100%, akkor enabled
+                modifier = Modifier.size(32.dp)
             ) {
                 Icon(
-                    imageVector = when (schedule.status) {
+                    imageVector = when (effectiveStatus) {
                         ScheduleStatus.Completed -> Icons.Filled.CheckCircle
                         ScheduleStatus.Planned, ScheduleStatus.Skipped -> Icons.Outlined.Circle
                     },
-                    contentDescription = when (schedule.status) {
-                        ScheduleStatus.Completed -> "Befejezett"
-                        ScheduleStatus.Planned -> "Tervezett"
-                        ScheduleStatus.Skipped -> "Kihagyott"
+                    contentDescription = when (effectiveStatus) {
+                        ScheduleStatus.Completed -> "Completed"
+                        ScheduleStatus.Planned -> "Not completed"
+                        ScheduleStatus.Skipped -> "Skipped"
                     },
-                    tint = when (schedule.status) {
-                        ScheduleStatus.Completed -> MaterialTheme.colorScheme.primary
-                        ScheduleStatus.Skipped -> MaterialTheme.colorScheme.error
-                        ScheduleStatus.Planned -> contentColor
+                    tint = when {
+                        effectiveStatus == ScheduleStatus.Completed -> SuccessCyan
+                        isDisabled -> SuccessCyan.copy(alpha = 0.5f)
+                        effectiveStatus == ScheduleStatus.Skipped -> MaterialTheme.colorScheme.error
+                        else -> TextSecondary
                     },
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(28.dp)
                 )
             }
         }

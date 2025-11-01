@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.progress.habittracker.data.local.TokenManager
 import com.progress.habittracker.data.model.HabitResponseDto
 import com.progress.habittracker.data.repository.ProfileRepository
@@ -30,13 +30,16 @@ import com.progress.habittracker.ui.viewmodel.ProfileViewModelFactory
 
 /**
  * Profile Screen
- * 
+ *
+ * Felhasználói profil megjelenítése
+ *
  * Funkciók:
- * - Felhasználó profil adatok megjelenítése
- * - Habit-ek listája
- * - Edit Profile navigáció
- * - Add Habit navigáció
- * - Logout funkció megerősítéssel
+ * - Profil adatok megjelenítése
+ * - Habit-ek listázása
+ * - Profil szerkesztése
+ * - Kijelentkezés
+ *
+ * @param navController Navigációs kontroller
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,34 +51,39 @@ fun ProfileScreen(
     val profileRepository = remember { ProfileRepository(tokenManager) }
 
     val viewModel: ProfileViewModel = viewModel(
-        factory = ProfileViewModelFactory(profileRepository)
+        factory = ProfileViewModelFactory(profileRepository, tokenManager)
     )
 
     val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Logout success -> navigáció Login-ra
-    LaunchedEffect(uiState.logoutSuccess) {
-        if (uiState.logoutSuccess) {
-            navController.navigate(Screen.Login.route) {
-                popUpTo(0) { inclusive = true }
-            }
-        }
-    }
-
-    // Hibaüzenet megjelenítése
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let { error ->
-            snackbarHostState.showSnackbar(
-                message = error,
-                duration = SnackbarDuration.Short
-            )
-            viewModel.clearError()
-        }
-    }
-
-    // Logout confirmation dialog state
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // Kijelentkezés dialog
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Kijelentkezés") },
+            text = { Text("Biztosan ki szeretnél jelentkezni?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.logout()
+                        showLogoutDialog = false
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    }
+                ) {
+                    Text("Kijelentkezés")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Mégse")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -90,143 +98,156 @@ fun ProfileScreen(
                     }
                 },
                 actions = {
-                    // Logout gomb
-                    IconButton(
-                        onClick = { showLogoutDialog = true },
-                        enabled = !uiState.isLoggingOut
-                    ) {
+                    IconButton(onClick = { showLogoutDialog = true }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Logout,
-                            contentDescription = "Kijelentkezés",
-                            tint = MaterialTheme.colorScheme.error
+                            contentDescription = "Kijelentkezés"
                         )
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            // Add Habit FAB
-            ExtendedFloatingActionButton(
-                onClick = {
-                    navController.navigate(Screen.AddHabit.route)
-                },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Új habit"
-                    )
-                },
-                text = { Text("Új Habit") }
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { paddingValues ->
-        when {
-            uiState.isLoading -> {
-                LoadingState(modifier = Modifier.padding(paddingValues))
-            }
-
-            uiState.profile != null -> {
-                ProfileContent(
-                    profile = uiState.profile!!,
-                    habits = uiState.habits,
-                    isLoadingHabits = uiState.isLoadingHabits,
-                    onEditProfile = {
-                        navController.navigate(Screen.EditProfile.route)
-                    },
-                    onHabitClick = { habitId ->
-                        // TODO: Navigate to Habit Details (opcionális)
-                    },
-                    modifier = Modifier.padding(paddingValues)
-                )
-            }
-
-            else -> {
-                ErrorState(
-                    message = "Nem sikerült betölteni a profilt",
-                    onRetry = { viewModel.loadProfile() },
-                    modifier = Modifier.padding(paddingValues)
-                )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                uiState.error != null -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = uiState.error ?: "Ismeretlen hiba",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.loadProfile() }) {
+                            Text("Újrapróbálás")
+                        }
+                    }
+                }
+                uiState.profile != null -> {
+                    ProfileContent(
+                        profile = uiState.profile!!,
+                        habits = uiState.habits,
+                        isLoadingHabits = uiState.isLoadingHabits,
+                        onEditProfile = { navController.navigate(Screen.EditProfile.route) }
+                    )
+                }
             }
         }
     }
-
-    // Logout confirmation dialog
-    if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Kijelentkezés") },
-            text = { Text("Biztosan ki szeretnél jelentkezni?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showLogoutDialog = false
-                        viewModel.logout()
-                    }
-                ) {
-                    Text("Igen", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Mégse")
-                }
-            }
-        )
-    }
 }
 
+/**
+ * Profil tartalom megjelenítése
+ */
 @Composable
 private fun ProfileContent(
     profile: com.progress.habittracker.data.model.ProfileResponseDto,
     habits: List<HabitResponseDto>,
     isLoadingHabits: Boolean,
-    onEditProfile: () -> Unit,
-    onHabitClick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    onEditProfile: () -> Unit
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Profile Header Card
+        // Profil kép és alapadatok
         item {
-            ProfileHeaderCard(
-                profile = profile,
-                onEditProfile = onEditProfile
-            )
-        }
-
-        // Habits Section Header
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Card(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "Habit-jeim",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                if (!isLoadingHabits) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Profil kép
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(profile.profileImageUrl ?: "https://via.placeholder.com/150")
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Profilkép",
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Username
                     Text(
-                        text = "${habits.size} habit",
+                        text = profile.username,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    // Email
+                    Text(
+                        text = profile.email,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    // Description
+                    if (!profile.description.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = profile.description,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Szerkesztés gomb
+                    Button(
+                        onClick = onEditProfile,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Profil szerkesztése")
+                    }
                 }
             }
         }
 
-        // Habits List vagy Loading
+        // Habit-ek szekció
+        item {
+            Text(
+                text = "Szokásaim (${habits.size})",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
         if (isLoadingHabits) {
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -234,209 +255,69 @@ private fun ProfileContent(
             }
         } else if (habits.isEmpty()) {
             item {
-                EmptyHabitsCard()
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Még nincs létrehozott szokásod",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         } else {
             items(habits) { habit ->
-                HabitItemCard(
-                    habit = habit,
-                    onClick = { onHabitClick(habit.id) }
-                )
+                HabitItem(habit = habit)
             }
         }
     }
 }
 
+/**
+ * Habit item megjelenítése
+ */
 @Composable
-private fun ProfileHeaderCard(
-    profile: com.progress.habittracker.data.model.ProfileResponseDto,
-    onEditProfile: () -> Unit
-) {
+private fun HabitItem(habit: HabitResponseDto) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Profile Image
-            AsyncImage(
-                model = profile.profileImageUrl ?: "https://via.placeholder.com/150",
-                contentDescription = "Profilkép",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Username
-            Text(
-                text = profile.username,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Email
-            Text(
-                text = profile.email,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-
-            // Description
-            if (!profile.description.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = profile.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Edit Profile Button
-            FilledTonalButton(
-                onClick = onEditProfile,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Profil szerkesztése",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Profil Szerkesztése")
-            }
-        }
-    }
-}
-
-@Composable
-private fun HabitItemCard(
-    habit: HabitResponseDto,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = habit.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = habit.category.name,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    if (habit.goal != null) {
-                        Text(
-                            text = " • Cél: ${habit.goal}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                if (!habit.description.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = habit.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyHabitsCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(16.dp)
         ) {
             Text(
-                text = "Még nincs habit-ed",
+                text = habit.name,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Kattints az 'Új Habit' gombra hogy létrehozz egyet!",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
 
-@Composable
-private fun LoadingState(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun ErrorState(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onRetry) {
-                Text("Újrapróbálás")
+            if (!habit.description.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = habit.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+
+            if (!habit.goal.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Cél: ${habit.goal}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Kategória chip
+            AssistChip(
+                onClick = { },
+                label = { Text(habit.category.name) }
+            )
         }
     }
 }

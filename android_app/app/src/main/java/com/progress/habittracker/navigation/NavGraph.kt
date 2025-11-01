@@ -9,8 +9,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 // Import-ok a PlaceholderScreen-hez
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
 // Auth Screen import-ok
 import com.progress.habittracker.ui.screens.auth.SplashScreen
@@ -243,22 +244,21 @@ private fun PlaceholderScreen(
     onNavigate: () -> Unit
 ) {
     // TODO: Ezt később törölni kell és helyettesíteni az igazi screen-ekkel
-    androidx.compose.foundation.layout.Box(
-        modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+    Box(
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = androidx.compose.ui.Alignment.Center
     ) {
-        androidx.compose.foundation.layout.Column(
+        Column(
             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            androidx.compose.material3.Text(
+            Text(
                 text = screenName,
-                style = androidx.compose.material3.MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium
             )
-            androidx.compose.material3.Button(onClick = onNavigate) {
-                androidx.compose.material3.Text("Navigate")
+            Button(onClick = onNavigate) {
+                Text("Navigate")
             }
         }
     }
 }
-
