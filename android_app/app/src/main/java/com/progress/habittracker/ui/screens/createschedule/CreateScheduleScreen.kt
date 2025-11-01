@@ -2,14 +2,17 @@ package com.progress.habittracker.ui.screens.createschedule
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -50,6 +53,14 @@ fun CreateScheduleScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Habit lista újratöltése amikor visszanavigálunk az AddHabit-ból
+    // NavBackStackEntry-t figyeljük, hogy tudjuk mikor jövünk vissza
+    val navBackStackEntry = navController.currentBackStackEntry
+    LaunchedEffect(navBackStackEntry) {
+        // Amikor visszajövünk erre a screen-re, frissítsük a habit listát
+        viewModel.loadHabits()
+    }
 
     // Ha sikeres a létrehozás, navigáljunk vissza
     LaunchedEffect(uiState.createSuccess) {
@@ -95,6 +106,7 @@ fun CreateScheduleScreen(
         CreateScheduleContent(
             uiState = uiState,
             viewModel = viewModel,
+            navController = navController,
             modifier = Modifier.padding(paddingValues)
         )
     }
@@ -104,12 +116,14 @@ fun CreateScheduleScreen(
 private fun CreateScheduleContent(
     uiState: CreateScheduleViewModel.CreateScheduleUiState,
     viewModel: CreateScheduleViewModel,
+    navController: NavController,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Habit Selection Section
@@ -118,7 +132,8 @@ private fun CreateScheduleContent(
                 habits = uiState.habits,
                 selectedHabit = uiState.selectedHabit,
                 isLoading = uiState.isLoadingHabits,
-                onHabitSelected = { viewModel.selectHabit(it) }
+                onHabitSelected = { viewModel.selectHabit(it) },
+                onAddNewHabit = { navController.navigate(com.progress.habittracker.navigation.Screen.AddHabit.route) }
             )
         }
 
@@ -158,7 +173,8 @@ private fun HabitSelectionSection(
     habits: List<HabitResponseDto>,
     selectedHabit: HabitResponseDto?,
     isLoading: Boolean,
-    onHabitSelected: (HabitResponseDto) -> Unit
+    onHabitSelected: (HabitResponseDto) -> Unit,
+    onAddNewHabit: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -168,11 +184,21 @@ private fun HabitSelectionSection(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = "Habit",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Habit",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                TextButton(onClick = onAddNewHabit) {
+                    Text("+ Új Habit")
+                }
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -235,6 +261,8 @@ private fun TimeSection(
     onStartTimeChange: (LocalTime) -> Unit,
     onDurationChange: (Int?) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -249,13 +277,31 @@ private fun TimeSection(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Start Time Display
-            Text(
-                text = "Kezdés: ${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))}",
-                style = MaterialTheme.typography.bodyLarge
-            )
+            // Start Time Picker
+            OutlinedButton(
+                onClick = {
+                    android.app.TimePickerDialog(
+                        context,
+                        { _, hour, minute ->
+                            onStartTimeChange(LocalTime.of(hour, minute))
+                        },
+                        startTime.hour,
+                        startTime.minute,
+                        true // 24-hour format
+                    ).show()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Kezdés: ${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))}")
+            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Duration Input
             var durationText by remember { mutableStateOf(duration?.toString() ?: "30") }
@@ -266,6 +312,7 @@ private fun TimeSection(
                     it.toIntOrNull()?.let { minutes -> onDurationChange(minutes) }
                 },
                 label = { Text("Időtartam (perc)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
         }

@@ -59,6 +59,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     
+    // Image loading - Coil
+    implementation("io.coil-kt:coil-compose:2.5.0")
+    
     // Networking - Retrofit, OkHttp, Gson
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)

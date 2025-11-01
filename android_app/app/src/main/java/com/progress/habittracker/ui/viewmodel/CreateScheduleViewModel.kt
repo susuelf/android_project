@@ -212,13 +212,18 @@ class CreateScheduleViewModel(
         val state = _uiState.value
         val habit = state.selectedHabit ?: return
 
+        // ISO 8601 formátum: "2025-10-31T14:30:00"
+        val startDateTime = "${state.selectedDate}T${state.startTime}"
+        val endDateTime = state.endTime?.let { "${state.selectedDate}T${it}" }
+
         val request = CreateCustomScheduleRequest(
             habitId = habit.id,
-            date = state.selectedDate.toString(), // YYYY-MM-DD
-            startTime = state.startTime.toString(), // HH:mm:ss
-            endTime = state.endTime?.toString(),
+            date = "${state.selectedDate}T00:00:00", // ISO 8601 formátum
+            startTime = startDateTime, // ISO 8601 formátum
+            endTime = endDateTime,
             durationMinutes = state.durationMinutes,
             isCustom = true,
+            participantIds = emptyList(),
             notes = state.notes.takeIf { it.isNotBlank() }
         )
 
@@ -255,14 +260,19 @@ class CreateScheduleViewModel(
         val state = _uiState.value
         val habit = state.selectedHabit ?: return
 
+        // ISO 8601 formátum: "2025-10-31T14:30:00"
+        val startDateTime = "${state.selectedDate}T${state.startTime}"
+        val endDateTime = state.endTime?.let { "${state.selectedDate}T${it}" }
+
         val request = CreateRecurringScheduleRequest(
             habitId = habit.id,
-            startTime = state.startTime.toString(),
+            startTime = startDateTime, // ISO 8601 formátum
             repeatPattern = state.repeatPattern,
-            endTime = state.endTime?.toString(),
+            endTime = endDateTime,
             durationMinutes = state.durationMinutes,
             repeatDays = state.repeatDays,
             isCustom = true,
+            participantIds = emptyList(),
             notes = state.notes.takeIf { it.isNotBlank() }
         )
 
