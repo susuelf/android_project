@@ -1,88 +1,84 @@
 package com.progress.habittracker.ui.theme
 
 import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 /**
  * Theme.kt - Téma konfiguráció
  * 
- * Ez a fájl tartalmazza az alkalmazás témáját (világos/sötét mód)
- * és a színsémákat.
+ * Progr3SS Dark Theme - a design képek alapján
  */
 
-// Sötét téma színséma
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-// Világos téma színséma
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* További színek felülírhatók szükség szerint:
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+// Progr3SS Dark Color Scheme - design képek szerinti színek
+private val Progr3SSDarkColorScheme = darkColorScheme(
+    // Primary colors
+    primary = PrimaryPurple,              // Fő lila - gombok, akciók
+    onPrimary = TextPrimary,              // Fehér szöveg primary-n
+    primaryContainer = DarkSurface,        // Container lila háttérrel
+    onPrimaryContainer = TextPrimary,      // Szöveg primary container-en
+    
+    // Secondary colors
+    secondary = SuccessCyan,               // Cyan - completed items
+    onSecondary = DarkBackground,          // Sötét szöveg secondary-n
+    secondaryContainer = DarkSurface,      
+    onSecondaryContainer = TextSecondary,
+    
+    // Tertiary colors
+    tertiary = SuccessGreen,               // Zöld - success states
+    onTertiary = DarkBackground,
+    tertiaryContainer = DarkSurface,
+    onTertiaryContainer = TextSecondary,
+    
+    // Background colors
+    background = DarkBackground,           // Fő háttér - dark navy
+    onBackground = TextPrimary,            // Fehér szöveg háttéren
+    
+    // Surface colors
+    surface = DarkSurface,                 // Kártyák, elevated surface
+    onSurface = TextPrimary,               // Fehér szöveg surface-ön
+    surfaceVariant = DarkSurfaceVariant,   // Világosabb surface
+    onSurfaceVariant = TextSecondary,      // Szürke szöveg surface variant-on
+    
+    // Error colors
+    error = ErrorRed,                      // Piros - hibák
+    onError = TextPrimary,
+    errorContainer = DarkErrorContainer,
+    onErrorContainer = ErrorRed,
+    
+    // Outline colors
+    outline = TextTertiary,           // Borderек, dividerek
+    outlineVariant = DarkSurfaceVariant,
 )
 
 /**
  * Progr3SSTheme - Az alkalmazás fő témája
  * 
- * Ez a Composable függvény alkalmazza a témát az egész alkalmazásra.
- * Támogatja a világos/sötét módot és az Android 12+ dinamikus színeket.
- * 
- * @param darkTheme Boolean - Sötét téma használata (alapértelmezett: rendszerbeállítás szerint)
- * @param dynamicColor Boolean - Dinamikus színek használata Android 12+ esetén
- * @param content Composable lambda - A téma alatt megjelenítendő tartalom
+ * Dark theme design a képek alapján.
+ * Mindig dark theme-et használunk (design követelmény).
  */
 @Composable
 fun Progr3SSTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dinamikus színek elérhetők Android 12+ verzióktól
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean = true,  // Mindig dark theme
+    dynamicColor: Boolean = false,  // Kikapcsoljuk a dinamikus színeket
     content: @Composable () -> Unit
 ) {
-    // Színséma kiválasztása a beállítások alapján
-    val colorScheme = when {
-        // Android 12+ és dinamikus színek engedélyezve
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        // Sötét téma
-        darkTheme -> DarkColorScheme
-        // Világos téma
-        else -> LightColorScheme
-    }
+    // Mindig a Progr3SS Dark Color Scheme-et használjuk
+    val colorScheme = Progr3SSDarkColorScheme
     
     val view = LocalView.current
     if (!view.isInEditMode) {
-        // SideEffect használata az állapotváltozáskor történő egyszer futó kód futtatására
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            // Status bar színe dark background
+            window.statusBarColor = DarkBackground.toArgb()
+            // Világos ikonok a dark status bar-on
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
 
