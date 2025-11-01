@@ -1,11 +1,11 @@
 package com.progress.habittracker.ui.screens.auth
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -13,36 +13,48 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.progress.habittracker.navigation.Screen
+import com.progress.habittracker.ui.theme.DarkBackground
+import com.progress.habittracker.ui.theme.DarkSurface
+import com.progress.habittracker.ui.theme.PrimaryPurple
 import com.progress.habittracker.ui.theme.Progr3SSTheme
+import com.progress.habittracker.ui.theme.SuccessCyan
+import com.progress.habittracker.ui.theme.TextPrimary
+import com.progress.habittracker.ui.theme.TextSecondary
+import com.progress.habittracker.ui.theme.TextTertiary
 import com.progress.habittracker.ui.viewmodel.AuthViewModel
 import com.progress.habittracker.ui.viewmodel.AuthViewModelFactory
 
 /**
- * LoginScreen - Bejelentkezési képernyő
+ * LoginScreen - Bejelentkezési képernyő (Design frissítve)
  * 
  * Funkciók:
- * - Email és jelszó beviteli mezők
+ * - Login/Register tab switcher
+ * - "Progr3SS" branding + "Habit Planner & Tracker" alcím
+ * - Email és jelszó beviteli mezők (dark theme)
+ * - "Forgot Password?" link
  * - Bejelentkezés gomb -> AuthViewModel.signIn()
- * - "Még nincs fiókod?" link -> Register Screen
+ * - Google bejelentkezés gomb (csak UI, nincs implementálva)
  * - Validáció és hibaüzenetek
  * - Loading state megjelenítése
- * 
- * OPCIONÁLIS (NINCS IMPLEMENTÁLVA):
- * - "Elfelejtett jelszó?" link
- * - Google bejelentkezés
  * 
  * @param navController Navigációs controller
  * @param viewModel Auth ViewModel
@@ -59,6 +71,7 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var isLoginTab by remember { mutableStateOf(true) } // Login/Register tab switcher
     
     // Focus manager a következő mezőre ugráshoz
     val focusManager = LocalFocusManager.current
@@ -78,129 +91,239 @@ fun LoginScreen(
         }
     }
     
-    // UI
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Bejelentkezés") }
-            )
-        }
-    ) { paddingValues ->
+    // UI - Teljes képernyős dark background
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DarkBackground)
+            .padding(24.dp)
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Logo és cím
+            Spacer(modifier = Modifier.height(60.dp))
+            
+            // Logo és cím - "Progr3SS" Habit Planner & Tracker
             Text(
-                text = "Progr3SS",
-                style = MaterialTheme.typography.displayMedium,
+                text = buildAnnotatedString {
+                    withStyle(style = SpanStyle(color = TextPrimary)) {
+                        append("Progr")
+                    }
+                    withStyle(style = SpanStyle(color = SuccessCyan)) {
+                        append("3")
+                    }
+                    withStyle(style = SpanStyle(color = TextPrimary)) {
+                        append("SS")
+                    }
+                },
+                style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                fontSize = 40.sp
             )
             
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Jelentkezz be a fiókodba",
+                text = "Habit Planner & Tracker",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = TextSecondary,
+                fontSize = 16.sp
             )
+            
+            Spacer(modifier = Modifier.height(48.dp))
+            
+            // Login/Register Tab Switcher
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .background(DarkSurface, RoundedCornerShape(24.dp)),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Login Tab
+                Button(
+                    onClick = { 
+                        isLoginTab = true
+                        // Navigálás a Register-ről Login-ra (ha szükséges)
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isLoginTab) PrimaryPurple else Color.Transparent,
+                        contentColor = if (isLoginTab) TextPrimary else TextSecondary
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Text(
+                        text = "Login",
+                        fontWeight = if (isLoginTab) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+                
+                // Register Tab
+                Button(
+                    onClick = { 
+                        // Navigálás Register screen-re
+                        navController.navigate(Screen.Register.route)
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = TextSecondary
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Text(
+                        text = "Register",
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+            }
             
             Spacer(modifier = Modifier.height(32.dp))
             
             // Email mező
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email cím") },
-                leadingIcon = {
-                    Icon(Icons.Default.Email, contentDescription = "Email ikon")
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                ),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                isError = email.isNotEmpty() && !viewModel.isValidEmail(email)
-            )
-            
-            if (email.isNotEmpty() && !viewModel.isValidEmail(email)) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Érvénytelen email cím",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, top = 4.dp)
+                    text = "Email",
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    placeholder = { 
+                        Text(
+                            "Your email address", 
+                            color = TextTertiary
+                        ) 
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = DarkSurface,
+                        unfocusedContainerColor = DarkSurface,
+                        focusedBorderColor = PrimaryPurple,
+                        unfocusedBorderColor = DarkSurface,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        cursorColor = PrimaryPurple
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    isError = email.isNotEmpty() && !viewModel.isValidEmail(email)
+                )
+                
+                if (email.isNotEmpty() && !viewModel.isValidEmail(email)) {
+                    Text(
+                        text = "Invalid email address",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            // Jelszó mező
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Password",
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    placeholder = { 
+                        Text(
+                            "Your password", 
+                            color = TextTertiary
+                        ) 
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) 
+                                    Icons.Default.Visibility 
+                                else 
+                                    Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) 
+                                    "Hide password" 
+                                else 
+                                    "Show password",
+                                tint = TextTertiary
+                            )
+                        }
+                    },
+                    visualTransformation = if (passwordVisible) 
+                        VisualTransformation.None 
+                    else 
+                        PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            if (viewModel.isValidEmail(email) && password.isNotEmpty()) {
+                                viewModel.signIn(email, password)
+                            }
+                        }
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = DarkSurface,
+                        unfocusedContainerColor = DarkSurface,
+                        focusedBorderColor = PrimaryPurple,
+                        unfocusedBorderColor = DarkSurface,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        cursorColor = PrimaryPurple
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 )
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
-            // Jelszó mező
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Jelszó") },
-                leadingIcon = {
-                    Icon(Icons.Default.Lock, contentDescription = "Jelszó ikon")
+            // Forgot Password link
+            TextButton(
+                onClick = { 
+                    // OPCIONÁLIS - Reset Password screen (nincs implementálva)
+                    // navController.navigate(Screen.ResetPassword.route)
                 },
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) 
-                                Icons.Default.Visibility 
-                            else 
-                                Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) 
-                                "Jelszó elrejtése" 
-                            else 
-                                "Jelszó mutatása"
-                        )
-                    }
-                },
-                visualTransformation = if (passwordVisible) 
-                    VisualTransformation.None 
-                else 
-                    PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        focusManager.clearFocus()
-                        // Login gomb funkcionalitás
-                        if (viewModel.isValidEmail(email) && password.isNotEmpty()) {
-                            viewModel.signIn(email, password)
-                        }
-                    }
-                ),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // OPCIONÁLIS: Elfelejtett jelszó link (NINCS IMPLEMENTÁLVA)
-            // TextButton(
-            //     onClick = { navController.navigate(Screen.ResetPassword.route) },
-            //     modifier = Modifier.align(Alignment.End)
-            // ) {
-            //     Text("Elfelejtett jelszó?")
-            // }
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    "Forgot Password?",
+                    color = SuccessCyan,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Bejelentkezés gomb
+            // Log in gomb
             Button(
                 onClick = {
                     if (viewModel.isValidEmail(email) && password.isNotEmpty()) {
@@ -209,18 +332,28 @@ fun LoginScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
+                    .height(54.dp),
                 enabled = authState !is AuthViewModel.AuthState.Loading &&
                         viewModel.isValidEmail(email) &&
-                        password.isNotEmpty()
+                        password.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryPurple,
+                    contentColor = TextPrimary,
+                    disabledContainerColor = PrimaryPurple.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(27.dp)
             ) {
                 if (authState is AuthViewModel.AuthState.Loading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = TextPrimary
                     )
                 } else {
-                    Text("Bejelentkezés", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Log in",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
             
@@ -231,39 +364,68 @@ fun LoginScreen(
                     text = (authState as AuthViewModel.AuthState.Error).message,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Regisztráció link
+            // "or login with" divider
             Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = "Még nincs fiókod?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                Divider(
+                    modifier = Modifier.weight(1f),
+                    color = TextTertiary.copy(alpha = 0.3f)
                 )
-                TextButton(
-                    onClick = { navController.navigate(Screen.Register.route) }
-                ) {
-                    Text("Regisztrálj")
-                }
+                Text(
+                    text = "  or login with  ",
+                    color = TextTertiary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Divider(
+                    modifier = Modifier.weight(1f),
+                    color = TextTertiary.copy(alpha = 0.3f)
+                )
             }
             
-            // OPCIONÁLIS: Google bejelentkezés (NINCS IMPLEMENTÁLVA)
-            // Spacer(modifier = Modifier.height(16.dp))
-            // OutlinedButton(
-            //     onClick = { /* Google sign-in */ },
-            //     modifier = Modifier.fillMaxWidth()
-            // ) {
-            //     Icon(painter = painterResource(R.drawable.ic_google), "Google")
-            //     Spacer(Modifier.width(8.dp))
-            //     Text("Bejelentkezés Google-lal")
-            // }
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Google bejelentkezés gomb (csak UI, nincs implementálva)
+            OutlinedButton(
+                onClick = { 
+                    // OPCIONÁLIS - Google Sign-In (nincs implementálva)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = TextPrimary
+                ),
+                border = ButtonDefaults.outlinedButtonBorder.copy(
+                    width = 1.dp,
+                    brush = androidx.compose.ui.graphics.SolidColor(TextTertiary.copy(alpha = 0.3f))
+                ),
+                shape = RoundedCornerShape(27.dp)
+            ) {
+                // Google "G" icon (egyszerű text-tel helyettesítve)
+                Text(
+                    text = "G",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = TextPrimary,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    "Google",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }
