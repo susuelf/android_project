@@ -2,7 +2,7 @@
 
 **Dátum**: 2025-11-01  
 **Aktuális Branch**: `main`  
-**Állapot**: ✅ Schedule Details & Edit Schedule Screens merged to main, Profile Screen következik
+**Állapot**: ✅ Profile & Edit Profile Screens merged to main - Projekt majdnem teljes!
 
 ---
 
@@ -879,35 +879,326 @@ com.progress.habittracker/
 
 ---
 
+### ✅ 10. Profile & Edit Profile Screens (feature/profile-screen → MERGED to main) - **ÚJ!**
+
+#### Profile Models ✅
+**Fájl**: `ProfileModels.kt`
+
+**ProfileResponseDto**:
+- `id: Int` - User egyedi azonosító
+- `email: String` - Email cím
+- `username: String` - Felhasználónév
+- `description: String?` - Profil leírás (opcionális)
+- `profileImageUrl: String?` - Profil kép URL (opcionális)
+- `createdAt: String` - Regisztráció időpontja
+
+**UpdateProfileRequest**:
+- `username: String?` - Új felhasználónév (opcionális)
+- `description: String?` - Új leírás (opcionális)
+
+**LogoutResponse**:
+- `message: String` - Logout megerősítő üzenet
+
+#### Profile API Service ✅
+**Fájl**: `ProfileApiService.kt`
+
+**Endpoint-ok**:
+```kotlin
+@GET("profile")
+suspend fun getMyProfile(@Header("Authorization") authorization: String): Response<ProfileResponseDto>
+
+@PATCH("profile")
+suspend fun updateProfile(@Body request: UpdateProfileRequest, @Header("Authorization") authorization: String): Response<ProfileResponseDto>
+
+@Multipart
+@POST("profile/upload-profile-image")
+suspend fun uploadProfileImage(@Part profileImage: MultipartBody.Part, @Header("Authorization") authorization: String): Response<ProfileResponseDto>
+
+@POST("auth/local/logout")
+suspend fun logout(@Header("Authorization") authorization: String): Response<LogoutResponse>
+```
+
+#### Habit API Service Bővítés ✅
+**Fájl**: `HabitApiService.kt` (frissítve)
+
+**Új endpoint**:
+```kotlin
+@GET("habit/user/{userId}")
+suspend fun getHabitsByUserId(@Path("userId") userId: Int, @Header("Authorization") authorization: String): Response<List<HabitResponseDto>>
+```
+
+#### Profile Repository ✅
+**Fájl**: `ProfileRepository.kt` (243 sor)
+
+**Metódusok**:
+- `getMyProfile()` - Flow<Resource<ProfileResponseDto>>
+  * GET /profile hívás
+  * Error handling: 401/404
+  
+- `updateProfile(request)` - Flow<Resource<ProfileResponseDto>>
+  * PATCH /profile hívás
+  * UpdateProfileRequest küldése
+  * Error handling: 401/400
+  
+- `uploadProfileImage(imageFile)` - Flow<Resource<ProfileResponseDto>>
+  * POST /profile/upload-profile-image hívás
+  * Multipart/form-data készítés File-ból
+  * Error handling: 401/400/413
+  
+- `getUserHabits(userId)` - Flow<Resource<List<HabitResponseDto>>>
+  * GET /habit/user/{userId} hívás
+  * User összes habit-jének lekérése
+  
+- `logout()` - Flow<Resource<Boolean>>
+  * POST /auth/local/logout hívás
+  * Token-ek törlése TokenManager-rel
+  * Success = true
+
+**RetrofitClient.kt frissítés**:
+- `profileApiService` hozzáadva
+
+#### Profile ViewModel ✅
+**Fájlok**: `ProfileViewModel.kt` (170 sor), `ProfileViewModelFactory.kt`
+
+**ProfileUiState**:
+- `profile: ProfileResponseDto?` - Profil adatok
+- `habits: List<HabitResponseDto>` - User habit-jei
+- `isLoading: Boolean` - Profil betöltés
+- `isLoadingHabits: Boolean` - Habit-ek betöltés
+- `isLoggingOut: Boolean` - Logout folyamatban
+- `logoutSuccess: Boolean` - Logout sikeres flag
+- `error: String?` - Hibaüzenet
+
+**Funkciók**:
+- `loadProfile()` - Profil betöltése (auto-load in init)
+  * Profil lekérése
+  * Automatikus habit-ek betöltése userId alapján
+  
+- `loadUserHabits(userId)` - Private, habit-ek lekérése
+  * Habit lista betöltése
+  * Külön loading state
+  
+- `logout()` - Kijelentkezés
+  * Logout API hívás
+  * Token-ek törlése
+  * logoutSuccess flag beállítása
+  
+- `clearError()` - Hiba törlés
+
+**StateFlow alapú reaktív state management**
+
+#### Profile Screen UI ✅
+**Fájl**: `ProfileScreen.kt` (442 sor)
+
+**ProfileScreen komponens**:
+- **TopAppBar** - Vissza gomb + Logout gomb (piros)
+  
+- **ProfileHeaderCard** - PrimaryContainer
+  * Profilkép (120dp, CircleShape, Coil AsyncImage)
+  * Username (headlineMedium, bold)
+  * Email (bodyMedium)
+  * Description (opcionális, bodySmall)
+  * "Profil Szerkesztése" gomb → EditProfile navigáció
+  
+- **Habits Section**:
+  * "Habit-jeim (N)" header
+  * Loading state: CircularProgressIndicator
+  * Empty state: Card - "Még nincs habit-ed"
+  * HabitItemCard lista:
+    - Habit név (titleMedium, bold)
+    - Kategória + Goal (bodySmall)
+    - Description (max 2 sor, ha van)
+  
+- **FAB** - ExtendedFloatingActionButton
+  * Icon: Add
+  * Text: "Új Habit"
+  * Navigáció: AddHabit screen
+  
+- **Logout Dialog** - AlertDialog
+  * Title: "Kijelentkezés"
+  * Text: "Biztosan ki szeretnél jelentkezni?"
+  * Confirm: "Kijelentkezés" (error színnel)
+  * Dismiss: "Mégse"
+  
+- **Navigation & Error Handling**:
+  * Snackbar hibaüzenetekhez
+  * Logout success → Login (popUpTo 0, inclusive true)
+  * LaunchedEffect success kezelésre
+
+**Material 3 Design** követése minden komponensben
+
+#### Edit Profile ViewModel ✅
+**Fájlok**: `EditProfileViewModel.kt` (226 sor), `EditProfileViewModelFactory.kt`
+
+**EditProfileUiState**:
+- `profile: ProfileResponseDto?` - Profil adatok
+- `username: String` - Szerkeszthető username
+- `description: String` - Szerkeszthető description
+- `selectedImageFile: File?` - Kiválasztott kép fájl
+- `isLoading: Boolean` - Profil betöltés
+- `isUpdating: Boolean` - Profil frissítés
+- `isUploadingImage: Boolean` - Kép feltöltés
+- `updateSuccess: Boolean` - Sikeres frissítés flag
+- `error: String?` - Hibaüzenet
+
+**Funkciók**:
+- `loadProfile()` - Profil betöltése (auto-load in init)
+  * Profil lekérése
+  * username és description inicializálása
+  
+- `setUsername()` / `setDescription()` - Field setters
+  
+- `selectImage(imageFile)` - Profilkép kiválasztása
+  * File objektum tárolása state-ben
+  
+- `saveProfile()` - Profil mentése
+  * Validáció: username nem lehet üres
+  * Ha van kép, először feltölti
+  * Majd profil adatok frissítése
+  
+- `uploadProfileImage(imageFile)` - Private, kép feltöltés
+  * Multipart upload
+  * isUploadingImage state
+  
+- `updateProfileData()` - Private, profil adatok frissítése
+  * Smart update: csak változott mezők küldése
+  * Ha semmi nem változott, skip API call
+  
+- `clearError()` - Hiba törlés
+
+**StateFlow alapú reaktív state management**
+
+#### Edit Profile Screen UI ✅
+**Fájl**: `EditProfileScreen.kt` (447 sor)
+
+**EditProfileScreen komponens**:
+- **TopAppBar** - "Profil Szerkesztése" + Vissza gomb
+  
+- **ProfileImageSection**:
+  * 140dp CircleShape profilkép
+  * 3dp border (primary color)
+  * Coil AsyncImage (current/selected/placeholder)
+  * Upload loading overlay (CircularProgressIndicator)
+  * "Kép Választása" gomb (CameraAlt icon)
+  * Image picker: ActivityResultContracts.GetContent
+  * URI → File konverzió cache dir-be
+  
+- **EmailCard** - SurfaceVariant, Read-only
+  * Email megjelenítése
+  * "Az email nem módosítható" hint
+  
+- **UsernameCard**:
+  * OutlinedTextField
+  * Single line
+  * Placeholder: "Add meg a felhasználóneved"
+  
+- **DescriptionCard**:
+  * OutlinedTextField (120dp magas, max 5 sor)
+  * **500 karakter limit + counter**
+  * Placeholder: "Mesélj magadról..."
+  * Error state ha túllépi
+  * Supporting text: "N / 500"
+  
+- **Mentés gomb**:
+  * "Változtatások Mentése" text
+  * Loading state (CircularProgressIndicator)
+  * Disabled uploading/updating közben
+  
+- **Loading/Error States**:
+  * Loading: CircularProgressIndicator központosítva
+  * Error: Hibaüzenet + Újrapróbálás gomb
+  
+- **Navigation & Error Handling**:
+  * Snackbar hibaüzenetekhez
+  * Automatikus navigáció vissza sikeres mentés után
+  * LaunchedEffect success kezelésre
+
+**Material 3 Design** követése minden komponensben
+
+#### Navigation Frissítés ✅
+**Fájl**: `NavGraph.kt`
+
+**Változtatások**:
+- ProfileScreen import és aktiválás (PlaceholderScreen helyett)
+- EditProfileScreen import és aktiválás (PlaceholderScreen helyett)
+- Teljes navigációs flow:
+  * Home → Profile (TopAppBar icon)
+  * Profile → EditProfile ("Profil Szerkesztése" gomb)
+  * Profile → AddHabit (FAB)
+  * Profile → Logout → Login (confirmation dialog)
+
+#### Package Struktúra (frissítve) ✅
+```
+com.progress.habittracker/
+├── data/
+│   ├── model/
+│   │   └── ProfileModels.kt              # ✨ ÚJ
+│   ├── remote/
+│   │   ├── ProfileApiService.kt          # ✨ ÚJ
+│   │   └── HabitApiService.kt (bővítve)
+│   └── repository/
+│       └── ProfileRepository.kt          # ✨ ÚJ
+├── navigation/
+│   └── NavGraph.kt (Profile screens aktiválva)
+├── ui/
+│   ├── screens/
+│   │   ├── profile/                      # ✨ ÚJ
+│   │   │   └── ProfileScreen.kt
+│   │   └── editprofile/                  # ✨ ÚJ
+│   │       └── EditProfileScreen.kt
+│   └── viewmodel/
+│       ├── ProfileViewModel.kt           # ✨ ÚJ
+│       ├── ProfileViewModelFactory.kt    # ✨ ÚJ
+│       ├── EditProfileViewModel.kt       # ✨ ÚJ
+│       └── EditProfileViewModelFactory.kt # ✨ ÚJ
+```
+
+---
+
 ## Következő Lépések
 
-### 🎯 Most: Profile Screen
+### ✅ Alapfunkciók KÉSZ!
 
-**Branch név**: `feature/profile-screen`
+A PROJECT_SPECIFICATION.md szerinti összes alapfunkció implementálva:
+- ✅ Authentication (Login, Register, Splash)
+- ✅ Home Screen (Schedule lista)
+- ✅ Schedule Management (Details, Edit, Create, Delete)
+- ✅ Habit Management (Add Habit, Habit lista)
+- ✅ Progress Tracking (Add Progress, History)
+- ✅ Profile Management (Profile, Edit Profile, Logout)
 
-**Elkészítendő funkciók:**
+### 🎯 Opcionális funkciók:
 
-1. **Profile Screen**
-   - Felhasználó profil adatok megjelenítése
-   - Habit-ek és progress ellenőrzése
-   - Új habit hozzáadás opció
-   - Logout funkció megerősítéssel
+1. **Reset Password Screen**
+   - Jelszó visszaállítás email-ben
+   - Endpoint: POST /auth/reset-password-via-email
+   
+2. **AI Assistant Screen** (Opcionális)
+   - OpenAI API integráció
+   - Habit javaslatok
+   - Egészségügyi tippek
+   
+3. **További fejlesztések**:
+   - Push notifications
+   - Offline support
+   - Data sync
+   - Statistics & Analytics
+   - Social features (friends, sharing)
 
-2. **Edit Profile Screen**
-   - Profil adatok szerkesztése
-   - Profilkép feltöltés
+---
 
-**API-k**:
-- `GET /profile` - Profil lekérése
-- `GET /habit/user/{userId}` - User habit-jei
-- `POST /auth/local/logout` - Logout
-- `PATCH /profile` - Profil frissítése (Edit Profile-hoz)
+## Elkészült Funkciók Összesítő
 
-### Utána: További fejlesztések
+| Modul | Screens | API Endpoints | Status |
+|-------|---------|---------------|--------|
+| **Auth** | Splash, Login, Register | signin, signup, refresh | ✅ KÉSZ |
+| **Home** | Dashboard | GET /schedule/day | ✅ KÉSZ |
+| **Schedule** | Details, Edit, Create | GET/PATCH/DELETE/POST /schedule | ✅ KÉSZ |
+| **Habit** | Add Habit | POST /habit, GET /habit/categories | ✅ KÉSZ |
+| **Progress** | Add Progress | POST /progress | ✅ KÉSZ |
+| **Profile** | Profile, Edit Profile | GET/PATCH /profile, logout, upload image | ✅ KÉSZ |
 
-- Push notifications
-- Offline support
-- Data sync
+**Összesen**: 9 elkészült screen + teljes MVVM architektúra + REST API integráció
 
 ---
 
