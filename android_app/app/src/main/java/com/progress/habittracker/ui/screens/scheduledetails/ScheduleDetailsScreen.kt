@@ -101,8 +101,7 @@ fun ScheduleDetailsScreen(
                     // Edit gomb
                     IconButton(
                         onClick = {
-                            // TODO: Navigáció Edit Schedule Screen-re
-                            // navController.navigate(Screen.EditSchedule.createRoute(scheduleId))
+                            navController.navigate(Screen.EditSchedule.createRoute(scheduleId))
                         },
                         enabled = !uiState.isDeleting
                     ) {

@@ -24,6 +24,8 @@ import com.progress.habittracker.ui.screens.createschedule.CreateScheduleScreen
 import com.progress.habittracker.ui.screens.addhabit.AddHabitScreen
 // Add Progress Screen import
 import com.progress.habittracker.ui.screens.addprogress.AddProgressScreen
+// Edit Schedule Screen import
+import com.progress.habittracker.ui.screens.editschedule.EditScheduleScreen
 
 /**
  * NavGraph - Navigációs gráf definiálása
@@ -168,15 +170,9 @@ fun NavGraph(
         ) { backStackEntry ->
             val scheduleId = backStackEntry.arguments?.getInt("scheduleId") ?: 0
             
-            // TODO: EditScheduleScreen() composable hívása
-            // EditScheduleScreen(
-            //     scheduleId = scheduleId,
-            //     onNavigateBack = { navController.popBackStack() },
-            //     onSaveSuccess = { navController.popBackStack() }
-            // )
-            PlaceholderScreen(
-                screenName = "Edit Schedule Screen (ID: $scheduleId)",
-                onNavigate = { navController.popBackStack() }
+            EditScheduleScreen(
+                navController = navController,
+                scheduleId = scheduleId
             )
         }
         
