@@ -221,10 +221,54 @@ class ScheduleRepository(
     }
     
     /**
-     * Egyszeri (custom) schedule l�trehoz�sa
+     * Schedule teljes frissítése
+     * 
+     * @param scheduleId Schedule ID
+     * @param request UpdateScheduleRequest - Frissítendő mezők
+     * @return Flow<Resource<ScheduleResponseDto>> - Frissített schedule
+     */
+    fun updateSchedule(
+        scheduleId: Int,
+        request: UpdateScheduleRequest
+    ): Flow<Resource<ScheduleResponseDto>> = flow {
+        try {
+            emit(Resource.Loading())
+            
+            val token = tokenManager.accessToken.first()
+            
+            if (token.isNullOrEmpty()) {
+                emit(Resource.Error("Nincs bejelentkezve"))
+                return@flow
+            }
+            
+            val response = scheduleApi.updateSchedule(
+                id = scheduleId,
+                request = request,
+                authorization = "Bearer $token"
+            )
+            
+            if (response.isSuccessful && response.body() != null) {
+                emit(Resource.Success(response.body()!!))
+            } else {
+                when (response.code()) {
+                    401 -> emit(Resource.Error("Lejárt a munkamenet"))
+                    404 -> emit(Resource.Error("Schedule nem található"))
+                    400 -> emit(Resource.Error("Hibás adatok"))
+                    403 -> emit(Resource.Error("Nincs jogosultságod módosítani"))
+                    else -> emit(Resource.Error("Hiba: ${response.message()}"))
+                }
+            }
+            
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Ismeretlen hiba"))
+        }
+    }
+    
+    /**
+     * Egyszeri (custom) schedule létrehozása
      * 
      * @param request CreateCustomScheduleRequest - Schedule adatai
-     * @return Flow<Resource<ScheduleResponseDto>> - L�trehozott schedule
+     * @return Flow<Resource<ScheduleResponseDto>> - Létrehozott schedule
      */
     fun createCustomSchedule(request: CreateCustomScheduleRequest): Flow<Resource<ScheduleResponseDto>> = flow {
         try {

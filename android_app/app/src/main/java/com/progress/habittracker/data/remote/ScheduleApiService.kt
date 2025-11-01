@@ -82,6 +82,32 @@ interface ScheduleApiService {
     ): Response<ScheduleResponseDto>
     
     /**
+     * Schedule teljes frissítése
+     * 
+     * Backend endpoint: PATCH /schedule/{id}
+     * 
+     * Schedule összes mezőjének frissítése (start_time, end_time, duration, status, notes, stb.)
+     * 
+     * @param id Schedule ID
+     * @param request UpdateScheduleRequest - Frissítendő mezők
+     * @param authorization Bearer token
+     * @return Response<ScheduleResponseDto> - Frissített schedule
+     * 
+     * Response kódok:
+     * - 200: Sikeres frissítés
+     * - 401: Nincs authentikáció
+     * - 404: Schedule nem található
+     * - 400: Hibás request body
+     * - 403: Nincs jogosultság a módosításra
+     */
+    @PATCH("schedule/{id}")
+    suspend fun updateSchedule(
+        @Path("id") id: Int,
+        @Body request: UpdateScheduleRequest,
+        @Header("Authorization") authorization: String
+    ): Response<ScheduleResponseDto>
+    
+    /**
      * Schedule törlése
      * 
      * Backend endpoint: DELETE /schedule/{id}

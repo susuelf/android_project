@@ -371,3 +371,43 @@ data class CreateProgressRequest(
     @SerializedName("is_completed")
     val isCompleted: Boolean = true
 )
+
+/**
+ * Update Schedule Request
+ * 
+ * Schedule módosítása
+ * 
+ * @property startTime Kezdési időpont (ISO 8601 format, opcionális)
+ * @property endTime Befejezési időpont (ISO 8601 format, opcionális)
+ * @property durationMinutes Időtartam percben (opcionális)
+ * @property status Schedule státusza (Planned/Completed/Skipped, opcionális)
+ * @property date Dátum (ISO 8601 format, opcionális)
+ * @property isCustom Egyedi schedule-e (opcionális)
+ * @property participantIds Résztvevők ID listája (opcionális)
+ * @property notes Jegyzetek (opcionális)
+ */
+data class UpdateScheduleRequest(
+    @SerializedName("start_time")
+    val startTime: String? = null,
+    
+    @SerializedName("end_time")
+    val endTime: String? = null,
+    
+    @SerializedName("duration_minutes")
+    val durationMinutes: Int? = null,
+    
+    @SerializedName("status")
+    val status: String? = null, // "Planned", "Completed", "Skipped"
+    
+    @SerializedName("date")
+    val date: String? = null,
+    
+    @SerializedName("is_custom")
+    val isCustom: Boolean? = null,
+    
+    @SerializedName("participantIds")
+    val participantIds: List<Int>? = null,
+    
+    @SerializedName("notes")
+    val notes: String? = null
+)
