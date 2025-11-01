@@ -1,8 +1,8 @@
 # Android UI Projekt - Állapot Jelentés
 
-**Dátum**: 2025-10-31  
+**Dátum**: 2025-11-01  
 **Aktuális Branch**: `main`  
-**Állapot**: ✅ Create Schedule Screen kész és merged to main, Add Habit következik
+**Állapot**: ✅ Add Progress Screen kész és merged to main, Edit Schedule következik
 
 ---
 
@@ -580,11 +580,13 @@ com.progress.habittracker/
 │   │   ├── AuthApiService.kt
 │   │   ├── ScheduleApiService.kt (bővítve)
 │   │   ├── HabitApiService.kt            # ✨ ÚJ
+│   │   ├── ProgressApiService.kt         # ✨ ÚJ
 │   │   └── RetrofitClient.kt (frissítve)
 │   └── repository/
 │       ├── AuthRepository.kt
 │       ├── ScheduleRepository.kt (bővítve)
-│       └── HabitRepository.kt            # ✨ ÚJ
+│       ├── HabitRepository.kt            # ✨ ÚJ
+│       └── ProgressRepository.kt         # ✨ ÚJ
 ├── navigation/
 │   ├── Screen.kt
 │   └── NavGraph.kt (frissítve)
@@ -598,10 +600,14 @@ com.progress.habittracker/
 │   │   │   ├── HomeScreen.kt
 │   │   │   └── ScheduleItemCard.kt
 │   │   ├── scheduledetails/
-│   │   │   ├── ScheduleDetailsScreen.kt
+│   │   │   ├── ScheduleDetailsScreen.kt (frissítve - FAB)
 │   │   │   └── ProgressItemCard.kt
-│   │   └── createschedule/              # ✨ ÚJ
-│   │       └── CreateScheduleScreen.kt
+│   │   ├── createschedule/              # ✨ ÚJ
+│   │   │   └── CreateScheduleScreen.kt
+│   │   ├── addhabit/                    # ✨ ÚJ
+│   │   │   └── AddHabitScreen.kt
+│   │   └── addprogress/                 # ✨ ÚJ
+│   │       └── AddProgressScreen.kt
 │   ├── viewmodel/
 │   │   ├── AuthViewModel.kt
 │   │   ├── AuthViewModelFactory.kt
@@ -610,7 +616,11 @@ com.progress.habittracker/
 │   │   ├── ScheduleDetailsViewModel.kt
 │   │   ├── ScheduleDetailsViewModelFactory.kt
 │   │   ├── CreateScheduleViewModel.kt        # ✨ ÚJ
-│   │   └── CreateScheduleViewModelFactory.kt # ✨ ÚJ
+│   │   ├── CreateScheduleViewModelFactory.kt # ✨ ÚJ
+│   │   ├── AddHabitViewModel.kt              # ✨ ÚJ
+│   │   ├── AddHabitViewModelFactory.kt       # ✨ ÚJ
+│   │   ├── AddProgressViewModel.kt           # ✨ ÚJ
+│   │   └── AddProgressViewModelFactory.kt    # ✨ ÚJ
 │   └── theme/
 ├── util/
 │   ├── Resource.kt
@@ -620,43 +630,126 @@ com.progress.habittracker/
 
 ---
 
+### ✅ 8. Add Progress Screen (feature/add-progress → MERGED to main) - **ÚJ!**
+
+#### Progress API Service ✅
+**Fájl**: `ProgressApiService.kt`
+- `createProgress()` - POST /progress - Progress létrehozása schedule-hoz
+
+#### Progress Repository ✅
+**Fájl**: `ProgressRepository.kt`
+- `createProgress()` - Flow<Resource<ProgressResponseDto>>
+- Token management, error handling (401/400/404)
+- Flow-based reaktív API
+
+#### Add Progress ViewModel ✅
+**Fájlok**: `AddProgressViewModel.kt`, `AddProgressViewModelFactory.kt`
+
+**AddProgressUiState**:
+- `date: LocalDate` - Progress dátuma (default: ma)
+- `loggedTime: String` - Eltöltött idő percben (opcionális, validált)
+- `notes: String` - Jegyzetek (max 500 karakter)
+- `isCompleted: Boolean` - Befejezett-e (default: true)
+- `isCreating: Boolean` - Progress létrehozás folyamatban
+- `createSuccess: Boolean` - Sikeres létrehozás flag
+- `error: String?` - Hibaüzenet
+
+**Funkciók**:
+- `setDate()` - Dátum beállítása
+- `setLoggedTime()` - Eltöltött idő beállítása
+- `setNotes()` - Jegyzetek beállítása
+- `toggleCompleted()` - Completed checkbox toggle
+- `createProgress()` - Progress API hívás
+- `clearError()` - Hiba törlés
+
+#### Add Progress UI ✅
+**Fájl**: `AddProgressScreen.kt` (349 sor)
+
+**AddProgressScreen komponens**:
+- **TopAppBar** - "Progress Hozzáadása" cím, vissza gomb
+  
+- **DateCard** - Dátum választás
+  - OutlinedButton Android DatePickerDialog-gal
+  - Calendar ikon
+  - Formázott dátum megjelenítés (yyyy. MMMM dd.)
+  - Default: mai nap
+  
+- **LoggedTimeCard** - Eltöltött idő (opcionális)
+  - OutlinedTextField számokkal (Number keyboard)
+  - **Input validáció**: csak számok, nem negatív
+  - Error state vizuális jelzéssel
+  - supportingText: "Érvényes számot adj meg (0 vagy nagyobb)"
+  
+- **NotesCard** - Jegyzetek (opcionális)
+  - OutlinedTextField 120dp magas, max 5 sor
+  - **Karakterszám számláló**: "42 / 500"
+  - Max 500 karakter limit
+  - Színes jelzés (piros ha túllépi)
+  - supportingText: "Max 500 karakter"
+  
+- **CompletedCard** - Befejezett checkbox
+  - Switch komponens
+  - Magyarázó szöveg állapot szerint
+  
+- **Mentés gomb**
+  - "Progress Mentése" text
+  - Loading state (CircularProgressIndicator)
+  - Disabled amikor isCreating
+  
+- **Navigation & Error Handling**
+  - Snackbar hibaüzenetekhez
+  - Automatikus navigáció vissza sikeres mentés után
+  - LaunchedEffect success/error kezelésre
+
+**Schedule Details Screen frissítés** ✅:
+- **FAB gomb hozzáadva**: ExtendedFloatingActionButton
+- "+ Progress" funkció
+- Navigáció AddProgress screen-re
+- **Auto-refresh**: LaunchedEffect(navBackStackEntry) - progress lista frissül visszanavigálás után
+
+**Material 3 Design** követése minden komponensben
+
+---
+
 ## Következő Lépések
 
-### 🎯 Most: Add Habit Screen
+### 🎯 Most: Edit Schedule Screen
 
-**Branch név**: `feature/add-habit`
+**Branch név**: `feature/edit-schedule`
 
 **Elkészítendő funkciók:**
 
-1. **Add Habit Screen**
-   - Habit név input
-   - Leírás/motiváció (optional)
-   - Goal beállítás (pl. "10 alkalom 2 héten belül")
-   - Kategória választás (GET /habit/categories)
-   - Ikon preview a kategóriához
-   - Mentés gomb -> POST /habit -> vissza
-   - Validáció: név és kategória kötelező
+1. **Edit Schedule Screen**
+   - Schedule adatok betöltése
+   - Start Time és End Time módosítása (TimePicker)
+   - Duration módosítása
+   - Státusz váltás: Planned / Completed / Skipped
+   - Participants/partners hozzáadása/eltávolítása
+   - Notes szerkesztése
+   - Mentés gomb -> PATCH /schedule/{id} -> vissza
+   - Validáció: kötelező mezők ellenőrzése
 
-**API-k (már készen vannak)**:
-- `HabitApiService.createHabit()` ✅
-- `HabitApiService.getCategories()` ✅
-- `HabitRepository.createHabit()` ✅
-- `HabitRepository.getCategories()` ✅
+**API-k**:
+- `ScheduleApiService.updateSchedule()` - PATCH /schedule/{id} (már létezik a ScheduleRepository-ban)
+- UpdateScheduleDto model létrehozása
 
 **Következő utána:**
 
-2. **Edit Schedule Screen**
-   - Schedule módosítása
-   - Időpont és duration frissítése
-   - Státusz váltás
-   - Notes szerkesztése
+2. **Profile Screen**
+   - Felhasználó profilja
+   - Statisztikák
+   - Beállítások
+   - Logout funkció
 
-### Utána: Progress & Profile
+3. **Edit Profile Screen**
+   - Profil adatok szerkesztése
+   - Profilkép feltöltés
 
-- Progress tracking implementáció
-- Profile Screen
-- Edit Profile
-- Settings
+### Utána: További fejlesztések
+
+- Push notifications
+- Offline support
+- Data sync
 
 ---
 
