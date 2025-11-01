@@ -127,7 +127,17 @@ object RetrofitClient {
         retrofit.create(HabitApiService::class.java)
     }
     
+    /**
+     * ProgressApiService instance létrehozása
+     * 
+     * Progress (haladás) kezeléshez kapcsolatos API műveletek
+     * 
+     * @return ProgressApiService implementáció
+     */
+    val progressApi: ProgressApiService by lazy {
+        retrofit.create(ProgressApiService::class.java)
+    }
+    
     // TODO: Később hozzáadandó API szolgáltatások
-    // val progressApiService: ProgressApiService by lazy { ... }
     // val profileApiService: ProfileApiService by lazy { ... }
 }

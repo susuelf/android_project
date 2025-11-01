@@ -343,3 +343,31 @@ data class CreateWeekdayRecurringScheduleRequest(
     @SerializedName("notes")
     val notes: String? = null
 )
+
+/**
+ * Create Progress Request
+ * 
+ * Progress (haladás) létrehozása egy schedule-hoz
+ * 
+ * @property scheduleId Schedule azonosító
+ * @property date Dátum (YYYY-MM-DD formátum)
+ * @property loggedTime Eltöltött idő percben (opcionális)
+ * @property notes Jegyzetek (opcionális)
+ * @property isCompleted Befejezett-e (default: true)
+ */
+data class CreateProgressRequest(
+    @SerializedName("scheduleId")
+    val scheduleId: Int,
+    
+    @SerializedName("date")
+    val date: String, // YYYY-MM-DD
+    
+    @SerializedName("logged_time")
+    val loggedTime: Int? = null,
+    
+    @SerializedName("notes")
+    val notes: String? = null,
+    
+    @SerializedName("is_completed")
+    val isCompleted: Boolean = true
+)

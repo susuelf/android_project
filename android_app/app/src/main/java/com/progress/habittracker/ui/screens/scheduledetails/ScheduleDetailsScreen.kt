@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ import com.progress.habittracker.data.model.ScheduleStatus
 import com.progress.habittracker.data.repository.ScheduleRepository
 import com.progress.habittracker.ui.viewmodel.ScheduleDetailsViewModel
 import com.progress.habittracker.ui.viewmodel.ScheduleDetailsViewModelFactory
+import com.progress.habittracker.navigation.Screen
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -116,6 +118,21 @@ fun ScheduleDetailsScreen(
                         )
                     }
                 }
+            )
+        },
+        floatingActionButton = {
+            // Add Progress FAB
+            ExtendedFloatingActionButton(
+                onClick = {
+                    navController.navigate(Screen.AddProgress.createRoute(scheduleId))
+                },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Progress hozzáadása"
+                    )
+                },
+                text = { Text("Progress") }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
