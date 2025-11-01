@@ -56,4 +56,19 @@ interface HabitApiService {
     suspend fun getCategories(
         @Header("Authorization") authorization: String
     ): Response<HabitCategoriesResponse>
+    
+    /**
+     * GET /habit/user/{userId}
+     * 
+     * User összes habit-jének lekérése ID alapján
+     * 
+     * @param userId User azonosító
+     * @param authorization Bearer token
+     * @return List<HabitResponseDto>
+     */
+    @GET("habit/user/{userId}")
+    suspend fun getHabitsByUserId(
+        @Path("userId") userId: Int,
+        @Header("Authorization") authorization: String
+    ): Response<List<HabitResponseDto>>
 }

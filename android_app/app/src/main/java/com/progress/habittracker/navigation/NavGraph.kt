@@ -28,6 +28,8 @@ import com.progress.habittracker.ui.screens.addprogress.AddProgressScreen
 import com.progress.habittracker.ui.screens.scheduledetails.ScheduleDetailsScreen
 // Edit Schedule Screen import
 import com.progress.habittracker.ui.screens.editschedule.EditScheduleScreen
+// Profile Screen import
+import com.progress.habittracker.ui.screens.profile.ProfileScreen
 
 /**
  * NavGraph - Navigációs gráf definiálása
@@ -210,22 +212,7 @@ fun NavGraph(
          * - Navigáció: EditProfile, Logout -> Login
          */
         composable(route = Screen.Profile.route) {
-            // TODO: ProfileScreen() composable hívása
-            // ProfileScreen(
-            //     onNavigateToEditProfile = {
-            //         navController.navigate(Screen.EditProfile.route)
-            //     },
-            //     onNavigateBack = { navController.popBackStack() },
-            //     onLogout = {
-            //         navController.navigate(Screen.Login.route) {
-            //             popUpTo(0) { inclusive = true }
-            //         }
-            //     }
-            // )
-            PlaceholderScreen(
-                screenName = "Profile Screen",
-                onNavigate = { navController.popBackStack() }
-            )
+            ProfileScreen(navController = navController)
         }
         
         /**

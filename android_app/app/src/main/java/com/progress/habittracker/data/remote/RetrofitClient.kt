@@ -138,6 +138,14 @@ object RetrofitClient {
         retrofit.create(ProgressApiService::class.java)
     }
     
-    // TODO: Később hozzáadandó API szolgáltatások
-    // val profileApiService: ProfileApiService by lazy { ... }
+    /**
+     * ProfileApiService instance létrehozása
+     * 
+     * Profil kezeléshez kapcsolatos API műveletek
+     * 
+     * @return ProfileApiService implementáció
+     */
+    val profileApiService: ProfileApiService by lazy {
+        retrofit.create(ProfileApiService::class.java)
+    }
 }
