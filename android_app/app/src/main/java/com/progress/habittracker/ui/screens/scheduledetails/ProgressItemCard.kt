@@ -16,13 +16,19 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 /**
- * Progress History Item Card komponens
- * 
- * Megjeleníti egy progress rekord részleteit:
- * - Dátum
- * - Logged time (ha van)
- * - Notes (ha van)
- * - Completed státusz ikon
+ * Progress History Item Card - Előrehaladás kártya
+ *
+ * Ez a komponens egy adott előrehaladási bejegyzés (progress record) részleteit jeleníti meg.
+ * Általában egy lista elemeként használatos a Schedule Details képernyőn.
+ *
+ * Megjelenített adatok:
+ * - Dátum (formázva).
+ * - Rögzített időtartam (ha van).
+ * - Megjegyzések (ha vannak).
+ * - Befejezettségi státusz (ikonnal jelezve).
+ *
+ * @param progress A megjelenítendő előrehaladási adatobjektum.
+ * @param modifier Opcionális módosító a kártya elhelyezéséhez.
  */
 @Composable
 fun ProgressItemCard(
@@ -32,6 +38,7 @@ fun ProgressItemCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
+            // Ha befejezett, akkor kiemelt színű, egyébként alapértelmezett felületszín
             containerColor = if (progress.isCompleted == true) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
@@ -46,11 +53,11 @@ fun ProgressItemCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bal oldal: Dátum, logged time, notes
+            // Bal oldal: Információk (Dátum, Idő, Jegyzet)
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                // Dátum
+                // Dátum megjelenítése
                 Text(
                     text = formatDate(progress.date),
                     style = MaterialTheme.typography.titleMedium,
@@ -60,7 +67,7 @@ fun ProgressItemCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Logged time
+                // Rögzített időtartam megjelenítése (ha van)
                 if (progress.loggedTime != null && progress.loggedTime > 0) {
                     Text(
                         text = "Idő: ${progress.loggedTime} perc",
@@ -70,20 +77,20 @@ fun ProgressItemCard(
                     Spacer(modifier = Modifier.height(2.dp))
                 }
 
-                // Notes
+                // Megjegyzés megjelenítése (ha van)
                 if (!progress.notes.isNullOrBlank()) {
                     Text(
                         text = progress.notes,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2
+                        maxLines = 2 // Hosszú szöveg esetén levágjuk
                     )
                 }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Jobb oldal: Completed státusz ikon
+            // Jobb oldal: Státusz ikon (Pipa vagy Üres kör)
             Icon(
                 imageVector = if (progress.isCompleted == true) {
                     Icons.Filled.CheckCircle
@@ -107,9 +114,12 @@ fun ProgressItemCard(
 }
 
 /**
- * Dátum formázó segédfüggvény
- * @param dateString Dátum string formátum: YYYY-MM-DD
- * @return Formázott dátum (pl. "2025. jan. 15.")
+ * Dátum formázó segédfüggvény.
+ *
+ * Átalakítja a "YYYY-MM-DD" formátumú dátumot "YYYY. MMM. dd." formátumra.
+ *
+ * @param dateString A dátum string formátumban.
+ * @return Formázott dátum string (pl. "2025. jan. 15.").
  */
 private fun formatDate(dateString: String?): String {
     if (dateString == null) return "N/A"
@@ -118,12 +128,15 @@ private fun formatDate(dateString: String?): String {
         val formatter = DateTimeFormatter.ofPattern("yyyy. MMM. dd.")
         date.format(formatter)
     } catch (_: Exception) {
-        dateString
+        dateString // Hiba esetén visszaadjuk az eredeti stringet
     }
 }
 
-// ===== PREVIEW =====
+// ===== ELŐNÉZETEK (PREVIEWS) =====
 
+/**
+ * Előnézet - Befejezett állapot.
+ */
 @Preview(showBackground = true)
 @Composable
 private fun ProgressItemCardPreview_Completed() {
@@ -143,6 +156,9 @@ private fun ProgressItemCardPreview_Completed() {
     }
 }
 
+/**
+ * Előnézet - Nem befejezett állapot.
+ */
 @Preview(showBackground = true)
 @Composable
 private fun ProgressItemCardPreview_NotCompleted() {

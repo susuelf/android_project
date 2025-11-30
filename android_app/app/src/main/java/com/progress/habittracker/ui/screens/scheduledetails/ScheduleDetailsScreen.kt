@@ -43,55 +43,62 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /**
- * Schedule Details Screen (Design frissítve - Dark Theme)
- * 
- * Négy fő kártya:
- * 1. Habit információ (név, időtartam, ismétlődés, partner)
- * 2. Progress bar (completion percentage vizualizáció)
- * 3. Notes (jegyzet + Edit Notes gomb)
- * 4. Recent Activity (progress history + notes)
- * 
+ * Schedule Details Screen - Időbeosztás részletei
+ *
+ * Ez a képernyő jeleníti meg egy adott időbeosztás (schedule) részletes adatait.
+ *
+ * Főbb komponensek:
+ * 1. Habit Info Card: Szokás neve, időtartam, státusz, résztvevők.
+ * 2. Progress Bar Card: Teljesítési arány vizualizációja.
+ * 3. Notes Card: Jegyzetek megjelenítése és szerkesztése.
+ * 4. Recent Activity Card: Aznapi egyéb időbeosztások listája.
+ *
  * Funkciók:
- * - Schedule részletes adatainak megjelenítése
- * - Habit információk
- * - Progress bar a teljesítési arány mutatásához
- * - Notes megjelenítése és szerkesztése
- * - Progress history lista jegyzetekkel
- * - Edit/Delete gombok (top bar menü)
- * - Cyan FAB az új progress hozzáadásához
+ * - Szerkesztés és Törlés menü (Top Bar).
+ * - Új előrehaladás (Progress) hozzáadása (FAB).
+ * - Jegyzetek szerkesztése dialógusablakban.
+ * - Törlés megerősítése dialógusablakban.
+ *
+ * @param navController A navigációért felelős vezérlő.
+ * @param scheduleId A megjelenítendő időbeosztás azonosítója.
  */
-@Suppress("NewApi") // Java Time API is available via desugaring
+@Suppress("NewApi") // Java Time API használata miatt (desugaring támogatott)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleDetailsScreen(
     navController: NavController,
     scheduleId: Int
 ) {
+    // Kontextus és függőségek inicializálása
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
     val scheduleRepository = remember { ScheduleRepository(tokenManager) }
 
+    // ViewModel létrehozása a Factory segítségével
     val viewModel: ScheduleDetailsViewModel = viewModel(
         factory = ScheduleDetailsViewModelFactory(scheduleRepository, scheduleId)
     )
 
+    // UI állapot figyelése a ViewModel-ből
     val uiState by viewModel.uiState.collectAsState()
+    
+    // Snackbar állapot a hibaüzenetek megjelenítéséhez
     val snackbarHostState = remember { SnackbarHostState() }
     
-    // Progress lista automatikus frissítése amikor visszajövünk az AddProgress Screen-ről
+    // Adatok frissítése, amikor visszatérünk erre a képernyőre (pl. AddProgress-ből)
     val navBackStackEntry = navController.currentBackStackEntry
     LaunchedEffect(navBackStackEntry) {
         viewModel.refreshSchedule()
     }
 
-    // Ha sikeresen töröltük, navigáljunk vissza
+    // Sikeres törlés esetén visszanavigálás
     LaunchedEffect(uiState.deleteSuccess) {
         if (uiState.deleteSuccess) {
             navController.popBackStack()
         }
     }
 
-    // Hibaüzenet megjelenítése Snackbar-ban
+    // Hibaüzenetek kezelése
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             snackbarHostState.showSnackbar(
@@ -102,11 +109,12 @@ fun ScheduleDetailsScreen(
         }
     }
 
-    // Delete confirmation dialog state
+    // Dialógusok és menü állapotai
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditNotesDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
 
+    // Scaffold: Az alapvető képernyőszerkezet
     Scaffold(
         topBar = {
             TopAppBar(
@@ -121,7 +129,7 @@ fun ScheduleDetailsScreen(
                     }
                 },
                 actions = {
-                    // Menu gomb
+                    // Menü gomb (három pont)
                     Box {
                         IconButton(
                             onClick = { showMenu = true },
@@ -134,6 +142,7 @@ fun ScheduleDetailsScreen(
                             )
                         }
                         
+                        // Legördülő menü: Szerkesztés és Törlés
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
@@ -171,7 +180,7 @@ fun ScheduleDetailsScreen(
             )
         },
         floatingActionButton = {
-            // Add Progress FAB - Extended gomb szöveggel
+            // FAB: Új előrehaladás hozzáadása
             ExtendedFloatingActionButton(
                 onClick = {
                     navController.navigate(Screen.AddProgress.createRoute(scheduleId))
@@ -196,6 +205,7 @@ fun ScheduleDetailsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = DarkBackground
     ) { paddingValues ->
+        // Tartalom megjelenítése állapot szerint
         when {
             uiState.isLoading -> {
                 LoadingState(modifier = Modifier.padding(paddingValues))
@@ -221,7 +231,7 @@ fun ScheduleDetailsScreen(
         }
     }
 
-    // Delete confirmation dialog
+    // Törlés megerősítése dialógus
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -245,7 +255,7 @@ fun ScheduleDetailsScreen(
         )
     }
 
-    // Edit Notes dialog
+    // Jegyzetek szerkesztése dialógus
     if (showEditNotesDialog) {
         val schedule = uiState.schedule
         if (schedule != null) {
@@ -262,6 +272,10 @@ fun ScheduleDetailsScreen(
     }
 }
 
+/**
+ * A képernyő tartalmát megjelenítő komponens.
+ * Listázza a különböző információs kártyákat.
+ */
 @Composable
 private fun ScheduleDetailsContent(
     schedule: ScheduleResponseDto,
@@ -275,17 +289,17 @@ private fun ScheduleDetailsContent(
         contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // 1. Habit Information Card
+        // 1. Szokás információk kártya
         item {
             HabitInfoCard(schedule = schedule)
         }
 
-        // 2. Progress Bar Card
+        // 2. Előrehaladás (Progress Bar) kártya
         item {
             ProgressBarCard(schedule = schedule, viewModel = viewModel)
         }
 
-        // 3. Notes Card
+        // 3. Jegyzetek kártya
         item {
             NotesCard(
                 notes = schedule.notes,
@@ -293,7 +307,7 @@ private fun ScheduleDetailsContent(
             )
         }
 
-        // 4. Recent Activity Card
+        // 4. Napi aktivitás kártya
         item {
             RecentActivityCard(
                 schedule = schedule,
@@ -301,7 +315,7 @@ private fun ScheduleDetailsContent(
             )
         }
         
-        // Extra padding for FAB
+        // Extra térköz a FAB miatt
         item {
             Spacer(modifier = Modifier.height(80.dp))
         }
@@ -309,15 +323,14 @@ private fun ScheduleDetailsContent(
 }
 
 /**
- * 1. Habit Information Card - Dark Theme
- * 
- * Tartalom:
- * - Habit ikon (színes kör)
- * - Habit név
- * - Időtartam (1:30 PM - 3:30 PM)
- * - Duration + Státusz badge (30m, Planned)
- * - With partner(s) + Davy Jones
- * - Repeat + recurring
+ * 1. Habit Information Card
+ *
+ * Megjeleníti a szokás alapvető adatait:
+ * - Ikon és név.
+ * - Időtartam (Kezdés - Befejezés).
+ * - Tervezett hossz és státusz.
+ * - Résztvevők.
+ * - Ismétlődés típusa.
  */
 @Composable
 private fun HabitInfoCard(schedule: ScheduleResponseDto) {
@@ -368,7 +381,7 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
             
             Spacer(modifier = Modifier.height(8.dp))
             
-            // Időtartam (1:30 PM - 3:30 PM)
+            // Időtartam (pl. 1:30 PM - 3:30 PM)
             Text(
                 text = "${formatTimeAMPM(schedule.startTime)} – ${formatTimeAMPM(schedule.endTime)}",
                 style = MaterialTheme.typography.bodyLarge,
@@ -378,7 +391,7 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Duration + Státusz row
+            // Időtartam és Státusz sor
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -401,7 +414,7 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
                     )
                 }
                 
-                // Státusz badge
+                // Státusz jelvény (Badge)
                 Surface(
                     color = when (displayStatus) {
                         ScheduleStatus.Completed -> SuccessCyan.copy(alpha = 0.2f)
@@ -431,7 +444,7 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // With partner(s)
+            // Résztvevők megjelenítése (ha vannak)
             if (!schedule.participants.isNullOrEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -478,7 +491,7 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
                 Spacer(modifier = Modifier.height(16.dp))
             }
             
-            // Repeat
+            // Ismétlődés típusa
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -492,7 +505,7 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
                 )
                 
                 Text(
-                    text = "recurring", // Ezt később lehet dinamikussá tenni
+                    text = "recurring", // Jelenleg statikus, később dinamikus lehet
                     color = TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
@@ -504,13 +517,10 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
 }
 
 /**
- * 2. Progress Bar Card - Dark Theme
- * 
- * Tartalom:
- * - Címke: "Progress"
- * - LinearProgressIndicator (cyan)
- * - Percentage szöveg: "X% complete" (eltöltött idő / schedule duration)
- * - Completed time vs duration text: "X/Y minutes"
+ * 2. Progress Bar Card
+ *
+ * Megjeleníti a teljesítési arányt százalékban és vizuálisan (progress bar).
+ * Összehasonlítja az eltöltött időt a tervezett időtartammal.
  */
 @Composable
 private fun ProgressBarCard(
@@ -521,7 +531,7 @@ private fun ProgressBarCard(
     val totalLoggedTime = viewModel.getTotalLoggedTime()
     val scheduleDuration = schedule.durationMinutes ?: 0
 
-    // Százalék számítás a ViewModel-ből (központosított logika)
+    // Százalék számítás a ViewModel-ből
     val uiState = viewModel.getScheduleUiState()
     val percentage = uiState.progressPercentage
 
@@ -535,7 +545,7 @@ private fun ProgressBarCard(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            // Címsor: "Progress" + percentage
+            // Címsor: "Progress" + százalék
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -560,7 +570,7 @@ private fun ProgressBarCard(
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            // Progress indicator
+            // Progress indicator (csík)
             LinearProgressIndicator(
                 progress = { percentage / 100f },
                 modifier = Modifier
@@ -573,7 +583,7 @@ private fun ProgressBarCard(
             
             Spacer(modifier = Modifier.height(8.dp))
             
-            // Time spent vs duration text
+            // Eltöltött idő / Tervezett idő szöveg
             Text(
                 text = "$totalLoggedTime / $scheduleDuration minutes",
                 style = MaterialTheme.typography.bodySmall,
@@ -585,12 +595,9 @@ private fun ProgressBarCard(
 }
 
 /**
- * 3. Notes Card - Dark Theme
- * 
- * Tartalom:
- * - "Notes" cím
- * - Jegyzetek szövege
- * - "Edit Notes" gomb (cyan, ikon + szöveg)
+ * 3. Notes Card
+ *
+ * Megjeleníti a jegyzeteket és lehetőséget ad a szerkesztésükre.
  */
 @Composable
 private fun NotesCard(
@@ -628,7 +635,7 @@ private fun NotesCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Edit Notes gomb
+            // Szerkesztés gomb
             TextButton(
                 onClick = onEditNotes,
                 colors = ButtonDefaults.textButtonColors(
@@ -652,11 +659,9 @@ private fun NotesCard(
 }
 
 /**
- * 4. Daily Schedule Card - Dark Theme
- * 
- * Tartalom:
- * - "Daily Schedule" cím
- * - Az adott nap összes schedule-je (kivéve a jelenlegit)
+ * 4. Recent Activity Card (Daily Schedule)
+ *
+ * Megjeleníti az adott napra vonatkozó egyéb időbeosztásokat.
  */
 @Composable
 private fun RecentActivityCard(
@@ -683,7 +688,7 @@ private fun RecentActivityCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Más scheduleok ugyanazon a napon
+            // Más schedule-ök listázása
             if (daySchedules.isNotEmpty()) {
                 daySchedules.forEach { daySchedule ->
                     ScheduleActivityItem(schedule = daySchedule)
@@ -702,12 +707,7 @@ private fun RecentActivityCard(
 }
 
 /**
- * Schedule Activity Item - Egyetlen schedule megjelenítése
- * 
- * Layout:
- * - Status ikon (bal) - Completed/Planned/Skipped
- * - Habit név + időpont (középen)
- * - Duration (jobb)
+ * Schedule Activity Item - Egyetlen schedule megjelenítése a listában.
  */
 @Composable
 private fun ScheduleActivityItem(
@@ -723,12 +723,12 @@ private fun ScheduleActivityItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Status ikon
+            // Státusz ikon
             Icon(
                 imageVector = when (schedule.status) {
-                    ScheduleStatus.Completed -> Icons.Default.Edit // CheckCircle placeholder
-                    ScheduleStatus.Planned -> Icons.Default.MoreVert // Schedule placeholder
-                    ScheduleStatus.Skipped -> Icons.Default.Delete // Close placeholder
+                    ScheduleStatus.Completed -> Icons.Default.Edit // Placeholder ikon
+                    ScheduleStatus.Planned -> Icons.Default.MoreVert // Placeholder ikon
+                    ScheduleStatus.Skipped -> Icons.Default.Delete // Placeholder ikon
                 },
                 contentDescription = null,
                 tint = when (schedule.status) {
@@ -757,7 +757,7 @@ private fun ScheduleActivityItem(
             }
         }
         
-        // Duration
+        // Időtartam
         Text(
             text = "${schedule.durationMinutes ?: 0}m",
             color = when (schedule.status) {
@@ -772,6 +772,9 @@ private fun ScheduleActivityItem(
     }
 }
 
+/**
+ * Töltés állapotot megjelenítő komponens.
+ */
 @Composable
 private fun LoadingState(modifier: Modifier = Modifier) {
     Box(
@@ -782,6 +785,9 @@ private fun LoadingState(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Hiba állapotot megjelenítő komponens.
+ */
 @Composable
 private fun ErrorState(
     message: String,
@@ -809,20 +815,18 @@ private fun ErrorState(
     }
 }
 
-// ===== HELPER FUNCTIONS =====
+// ===== SEGÉDFÜGGVÉNYEK =====
 
 /**
- * 24-órás formátumot AM/PM formátumra alakít
- * "14:30" -> "2:30 PM"
- * "09:00" -> "9:00 AM"
+ * 24-órás formátumot AM/PM formátumra alakít.
+ * Pl. "14:30" -> "2:30 PM"
  */
 private fun formatTimeAMPM(time: String?): String {
     if (time.isNullOrEmpty()) return ""
     
     return try {
-        // ISO formátum vagy csak idő?
+        // ISO formátum kezelése
         val timeString = if (time.contains("T")) {
-            // ISO formátum: "2025-10-31T14:30:00Z" -> "14:30"
             time.substringAfter("T").substringBefore(":")
                 .let { hour ->
                     val minute = time.substringAfter("T").substringAfter(":").substringBefore(":")
@@ -845,13 +849,13 @@ private fun formatTimeAMPM(time: String?): String {
         
         "$displayHour:$minute $amPm"
     } catch (e: Exception) {
-        time
+        time // Hiba esetén visszaadjuk az eredeti stringet
     }
 }
 
 /**
- * Dátum formázás időponttal
- * "2025-10-31" -> "Oct 31, 2:30 PM"
+ * Dátum formázás időponttal.
+ * Pl. "2025-10-31" -> "Oct 31, 2:30 PM"
  */
 private fun formatDateWithTime(date: String?, createdAt: String?): String {
     val dateStr = formatDate(date)
@@ -893,12 +897,9 @@ private fun formatTime(timeString: String?): String {
 // ===== EDIT NOTES DIALOG =====
 
 /**
- * Edit Notes Dialog - Dark Theme
- * 
- * Jegyzetek szerkesztése közvetlenül a Details képernyőről
- * - TextField a notes szerkesztéséhez
- * - Cancel/Save gombok
- * - Loading state kezelése
+ * Edit Notes Dialog - Jegyzetek szerkesztése
+ *
+ * Egy felugró ablak, ahol a felhasználó módosíthatja a jegyzeteket.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

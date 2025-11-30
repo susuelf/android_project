@@ -27,59 +27,69 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /**
- * Create Schedule Screen
- * 
- * Új schedule létrehozása:
- * - Habit kiválasztás
- * - Dátum és időpont beállítás
- * - Ismétlődés pattern
- * - Duration
- * - Notes
+ * Create Schedule Screen - Új időbeosztás létrehozása
+ *
+ * Ez a képernyő teszi lehetővé a felhasználók számára, hogy új időbeosztást (schedule) hozzanak létre
+ * egy meglévő szokáshoz (habit).
+ *
+ * Főbb funkciók:
+ * - Szokás kiválasztása a meglévő listából.
+ * - Kezdési időpont és tervezett időtartam beállítása.
+ * - Ismétlődési mintázat beállítása (pl. naponta, hétköznap, hétvégén).
+ * - Opcionális megjegyzések hozzáadása.
+ * - Új szokás létrehozásának kezdeményezése, ha a listában nem szerepel a kívánt szokás.
+ *
+ * @param navController A navigációért felelős vezérlő.
  */
-@Suppress("NewApi") // Java Time API is available via desugaring
+@Suppress("NewApi") // Java Time API használata miatt (desugaring támogatott)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateScheduleScreen(
     navController: NavController
 ) {
+    // Kontextus és függőségek inicializálása
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
     val scheduleRepository = remember { ScheduleRepository(tokenManager) }
     val habitRepository = remember { HabitRepository(tokenManager) }
 
+    // ViewModel létrehozása a Factory segítségével
     val viewModel: CreateScheduleViewModel = viewModel(
         factory = CreateScheduleViewModelFactory(scheduleRepository, habitRepository)
     )
 
+    // UI állapot figyelése a ViewModel-ből
     val uiState by viewModel.uiState.collectAsState()
+    
+    // Snackbar állapot a hibaüzenetek megjelenítéséhez
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Habit lista újratöltése amikor visszanavigálunk az AddHabit-ból
-    // NavBackStackEntry-t figyeljük, hogy tudjuk mikor jövünk vissza
+    // Habit lista újratöltése, amikor visszanavigálunk az AddHabit képernyőről.
+    // Ez biztosítja, hogy ha a felhasználó létrehozott egy új szokást, az megjelenjen a listában.
     val navBackStackEntry = navController.currentBackStackEntry
     LaunchedEffect(navBackStackEntry) {
-        // Amikor visszajövünk erre a screen-re, frissítsük a habit listát
         viewModel.loadHabits()
     }
 
-    // Ha sikeres a létrehozás, navigáljunk vissza
+    // Ha sikeres a létrehozás, navigáljunk vissza az előző képernyőre
     LaunchedEffect(uiState.createSuccess) {
         if (uiState.createSuccess) {
             navController.popBackStack()
         }
     }
 
-    // Hibaüzenet megjelenítése
+    // Hibaüzenet megjelenítése Snackbar-ban
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             snackbarHostState.showSnackbar(
                 message = error,
                 duration = SnackbarDuration.Short
             )
-            viewModel.clearError()
+            viewModel.clearError() // Hiba törlése megjelenítés után
         }
     }
 
+    // Scaffold: Az alapvető képernyőszerkezet (TopBar, BottomBar, Content)
     Scaffold(
         topBar = {
             TopAppBar(
@@ -99,10 +109,11 @@ fun CreateScheduleScreen(
             BottomBar(
                 onCreateClick = { viewModel.createSchedule() },
                 isCreating = uiState.isCreating,
-                enabled = uiState.selectedHabit != null
+                enabled = uiState.selectedHabit != null // Csak akkor engedélyezett, ha van kiválasztott szokás
             )
         }
     ) { paddingValues ->
+        // A tartalom megjelenítése
         CreateScheduleContent(
             uiState = uiState,
             viewModel = viewModel,
@@ -112,6 +123,10 @@ fun CreateScheduleScreen(
     }
 }
 
+/**
+ * A képernyő tartalmát megjelenítő Composable.
+ * LazyColumn-t használ a görgethetőség érdekében.
+ */
 @Composable
 private fun CreateScheduleContent(
     uiState: CreateScheduleViewModel.CreateScheduleUiState,
@@ -126,7 +141,7 @@ private fun CreateScheduleContent(
         contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Habit Selection Section
+        // 1. Szokás kiválasztása szekció
         item {
             HabitSelectionSection(
                 habits = uiState.habits,
@@ -137,8 +152,9 @@ private fun CreateScheduleContent(
             )
         }
 
-        // Time Section
+        // Csak akkor jelenítjük meg a többi szekciót, ha már van kiválasztott szokás
         if (uiState.selectedHabit != null) {
+            // 2. Idő és időtartam beállítása szekció
             item {
                 TimeSection(
                     startTime = uiState.startTime,
@@ -148,7 +164,7 @@ private fun CreateScheduleContent(
                 )
             }
 
-            // Repeat Pattern Section
+            // 3. Ismétlődési mintázat beállítása szekció
             item {
                 RepeatPatternSection(
                     repeatPattern = uiState.repeatPattern,
@@ -156,7 +172,7 @@ private fun CreateScheduleContent(
                 )
             }
 
-            // Notes Section
+            // 4. Megjegyzések szekció
             item {
                 NotesSection(
                     notes = uiState.notes,
@@ -167,6 +183,10 @@ private fun CreateScheduleContent(
     }
 }
 
+/**
+ * Szokás kiválasztására szolgáló szekció.
+ * Tartalmaz egy legördülő menüt a meglévő szokásokkal és egy gombot új szokás létrehozásához.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HabitSelectionSection(
@@ -176,7 +196,7 @@ private fun HabitSelectionSection(
     onHabitSelected: (HabitResponseDto) -> Unit,
     onAddNewHabit: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) } // Legördülő menü állapota
 
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -184,6 +204,7 @@ private fun HabitSelectionSection(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            // Fejléc és "Új hozzáadása" gomb
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -207,6 +228,7 @@ private fun HabitSelectionSection(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             } else {
+                // Legördülő menü (Dropdown)
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = it }
@@ -214,7 +236,7 @@ private fun HabitSelectionSection(
                     OutlinedTextField(
                         value = selectedHabit?.name ?: androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.select_habit_placeholder),
                         onValueChange = {},
-                        readOnly = true,
+                        readOnly = true, // A felhasználó nem írhat bele közvetlenül
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(MenuAnchorType.PrimaryNotEditable),
@@ -254,6 +276,10 @@ private fun HabitSelectionSection(
     }
 }
 
+/**
+ * Idő és időtartam beállítására szolgáló szekció.
+ * Tartalmaz egy időválasztót (TimePicker) és egy szövegmezőt az időtartamhoz.
+ */
 @Composable
 private fun TimeSection(
     startTime: LocalTime,
@@ -277,7 +303,7 @@ private fun TimeSection(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Start Time Picker
+            // Kezdési idő kiválasztása (TimePickerDialog)
             OutlinedButton(
                 onClick = {
                     android.app.TimePickerDialog(
@@ -287,7 +313,7 @@ private fun TimeSection(
                         },
                         startTime.hour,
                         startTime.minute,
-                        true // 24-hour format
+                        true // 24 órás formátum
                     ).show()
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -303,7 +329,7 @@ private fun TimeSection(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Duration Input
+            // Időtartam megadása percben
             var durationText by remember { mutableStateOf(duration?.toString() ?: "30") }
             OutlinedTextField(
                 value = durationText,
@@ -319,6 +345,10 @@ private fun TimeSection(
     }
 }
 
+/**
+ * Ismétlődési mintázat beállítására szolgáló szekció.
+ * FilterChip-eket használ a választáshoz.
+ */
 @Composable
 private fun RepeatPatternSection(
     repeatPattern: RepeatPattern,
@@ -338,6 +368,7 @@ private fun RepeatPatternSection(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Első sor: Egyszeri, Naponta
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -359,6 +390,7 @@ private fun RepeatPatternSection(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Második sor: Hétköznap, Hétvégén
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -381,6 +413,9 @@ private fun RepeatPatternSection(
     }
 }
 
+/**
+ * Megjegyzések hozzáadására szolgáló szekció.
+ */
 @Composable
 private fun NotesSection(
     notes: String,
@@ -413,6 +448,9 @@ private fun NotesSection(
     }
 }
 
+/**
+ * Alsó sáv a létrehozás gombbal.
+ */
 @Composable
 private fun BottomBar(
     onCreateClick: () -> Unit,

@@ -30,22 +30,22 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /**
- * Schedule Item Card (Design frissítve - Dark Theme)
- * 
- * Egy schedule megjelenítése kártya formátumban a Home Screen-en.
- * 
- * Funkciók:
- * - Habit név és időpont megjelenítése
- * - Dark surface háttér (#2A2A3E)
- * - Habit ikon színes körben (bal oldal)
- * - Időpont és habit név (középen)
- * - Státusz checkbox (jobb oldal) - zöld pipa ha kész, üres kör ha nem
- * - Kattintható -> Schedule Details Screen
- * 
- * @param schedule A megjelenítendő schedule adatai
- * @param onScheduleClick Kártya kattintás callback (navigáció Details-re)
- * @param onStatusToggle Checkbox kattintás callback (státusz váltás)
- * @param modifier Opcionális Modifier
+ * Schedule Item Card - Időbeosztás kártya
+ *
+ * Egy adott időbeosztás (schedule) megjelenítése kártya formátumban a Home képernyőn.
+ *
+ * Főbb funkciók:
+ * - Szokás (Habit) nevének és időpontjának megjelenítése.
+ * - Ikon megjelenítése a bal oldalon (szokás nevének kezdőbetűje).
+ * - Státusz jelzése és módosítása (Checkbox):
+ *   - Üres kör: Tervezett (Planned)
+ *   - Zöld pipa: Befejezett (Completed)
+ * - Kattintható felület: Részletes nézet megnyitása.
+ *
+ * @param schedule A megjelenítendő időbeosztás adatai.
+ * @param onScheduleClick Callback a kártyára kattintáskor (részletek megnyitása).
+ * @param onStatusToggle Callback a státusz módosításakor (checkbox kattintás).
+ * @param modifier Opcionális módosító a kártya elhelyezéséhez.
  */
 @Composable
 fun ScheduleItemCard(
@@ -54,22 +54,22 @@ fun ScheduleItemCard(
     onStatusToggle: (Int, ScheduleStatus) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // UI állapot számítása a központosított kalkulátorral
+    // UI állapot számítása a központosított kalkulátorral (pl. progress alapján)
     val uiState = com.progress.habittracker.util.ScheduleStateCalculator.calculate(schedule)
     
-    // Automatikus Completed státusz ha a kalkulátor szerint kész
+    // Effektív státusz meghatározása: Ha a kalkulátor szerint kész (pl. progress 100%), akkor Completed
     val effectiveStatus = if (uiState.isChecked) ScheduleStatus.Completed else ScheduleStatus.Planned
     
-    // Interakció tiltása ha a kalkulátor szerint disabled
+    // Interakció tiltása, ha a kalkulátor szerint letiltott (pl. már kész)
     val isDisabled = !uiState.isEnabled
     
-    // Habit ikon szín (alapból HabitBlue, kategória szerint variálható)
-    val habitIconColor = HabitBlue // Később kategória alapján lehet testreszabni
+    // Szokás ikon háttérszíne (jelenleg fix kék, később kategória függő lehet)
+    val habitIconColor = HabitBlue
     
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onScheduleClick(schedule.id) },
+            .clickable { onScheduleClick(schedule.id) }, // Teljes kártya kattintható
         colors = CardDefaults.cardColors(
             containerColor = DarkSurface,
             contentColor = TextPrimary
@@ -84,7 +84,7 @@ fun ScheduleItemCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bal oldal: Habit ikon színes körben
+            // Bal oldal: Szokás ikon (Kezdőbetű színes körben)
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -92,7 +92,6 @@ fun ScheduleItemCard(
                     .background(habitIconColor.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                // Habit első betűje vagy emoji (később lehet kategória ikon)
                 Text(
                     text = schedule.habit.name.firstOrNull()?.uppercase() ?: "H",
                     style = MaterialTheme.typography.titleMedium,
@@ -102,13 +101,13 @@ fun ScheduleItemCard(
                 )
             }
             
-            // Középső rész: Habit név és időpont
+            // Középső rész: Szokás neve és időpontja
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 16.dp)
             ) {
-                // Habit név
+                // Szokás neve
                 Text(
                     text = schedule.habit.name,
                     style = MaterialTheme.typography.bodyLarge,
@@ -121,7 +120,7 @@ fun ScheduleItemCard(
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                // Időpont
+                // Időpont (formázva)
                 Text(
                     text = formatTime(schedule.startTime),
                     style = MaterialTheme.typography.bodyMedium,
@@ -130,10 +129,10 @@ fun ScheduleItemCard(
                 )
             }
             
-            // Jobb oldal: Státusz checkbox
+            // Jobb oldal: Státusz jelző (Checkbox)
             IconButton(
                 onClick = { onStatusToggle(schedule.id, schedule.status) },
-                enabled = !isDisabled, // Csak ha progress NEM 100%, akkor enabled
+                enabled = !isDisabled, // Csak akkor kattintható, ha nincs letiltva
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
@@ -160,13 +159,13 @@ fun ScheduleItemCard(
 }
 
 /**
- * Időpont formázó helper függvény
- * 
- * Átalakítja a backend ISO 8601 vagy HH:mm formátumot
- * ember-olvasható formátumra (HH:mm)
- * 
- * @param timeString Backend időpont string
- * @return Formázott időpont (pl. "08:30")
+ * Időpont formázó segédfüggvény.
+ *
+ * Átalakítja a backend által küldött időformátumot (ISO 8601 vagy HH:mm:ss)
+ * felhasználóbarát formátumra (HH:mm).
+ *
+ * @param timeString Az időpont string formátumban.
+ * @return Formázott időpont (pl. "08:30").
  */
 private fun formatTime(timeString: String): String {
     return try {
@@ -175,17 +174,17 @@ private fun formatTime(timeString: String): String {
             val time = LocalTime.parse(timeString.substringAfter('T').substringBefore('Z'))
             time.format(DateTimeFormatter.ofPattern("HH:mm"))
         } else {
-            // Ha már HH:mm formátum
+            // Ha már HH:mm:ss formátum, levágjuk a másodperceket
             timeString.substringBefore(':').padStart(2, '0') + ":" + 
             timeString.substringAfter(':').take(2).padStart(2, '0')
         }
     } catch (e: Exception) {
-        timeString // Fallback: eredeti string
+        timeString // Hiba esetén visszaadjuk az eredeti stringet
     }
 }
 
 /**
- * Preview - Tervezett schedule
+ * Előnézet (Preview) - Tervezett állapotú kártya.
  */
 @Preview(showBackground = true)
 @Composable
@@ -228,7 +227,7 @@ fun ScheduleItemCardPreview_Planned() {
 }
 
 /**
- * Preview - Befejezett schedule
+ * Előnézet (Preview) - Befejezett állapotú kártya.
  */
 @Preview(showBackground = true)
 @Composable

@@ -1,88 +1,94 @@
 package com.progress.habittracker.ui.screens.addhabit
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import com.progress.habittracker.data.local.TokenManager
-import com.progress.habittracker.data.model.HabitCategoryResponseDto
-import com.progress.habittracker.data.repository.HabitRepository
-import com.progress.habittracker.ui.theme.DarkBackground
+// Android és Compose alapkönyvtárak
+import androidx.compose.foundation.background // Háttérszín beállítása
+import androidx.compose.foundation.border // Keret rajzolása
+import androidx.compose.foundation.clickable // Kattinthatóság
+import androidx.compose.foundation.layout.* // Layout elemek (Column, Row, Spacer, stb.)
+import androidx.compose.foundation.lazy.LazyColumn // Görgethető lista
+import androidx.compose.foundation.lazy.grid.GridCells // Rács elrendezés cellái
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid // Görgethető rács
+import androidx.compose.foundation.lazy.grid.items // Rács elemek kezelése
+import androidx.compose.foundation.shape.RoundedCornerShape // Lekerekített sarkok
+import androidx.compose.material.icons.Icons // Ikonok
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // Vissza nyíl
+import androidx.compose.material.icons.filled.Category // Kategória ikon
+import androidx.compose.material3.* // Material Design 3 komponensek
+import androidx.compose.runtime.* // Állapotkezelés
+import androidx.compose.ui.Alignment // Igazítás
+import androidx.compose.ui.Modifier // UI módosítók
+import androidx.compose.ui.graphics.Color // Színkezelés
+import androidx.compose.ui.text.font.FontWeight // Betűvastagság
+import androidx.compose.ui.unit.dp // Mértékegység
+import androidx.compose.ui.unit.sp // Betűméret
+import androidx.lifecycle.viewmodel.compose.viewModel // ViewModel integráció
+import androidx.navigation.NavController // Navigáció
+// Saját osztályok
+import com.progress.habittracker.data.local.TokenManager // Token kezelés
+import com.progress.habittracker.data.model.HabitCategoryResponseDto // Kategória adatmodell
+import com.progress.habittracker.data.repository.HabitRepository // Adatréteg
+import com.progress.habittracker.ui.theme.DarkBackground // Téma színek
 import com.progress.habittracker.ui.theme.DarkSurface
 import com.progress.habittracker.ui.theme.PrimaryPurple
 import com.progress.habittracker.ui.theme.TextPrimary
 import com.progress.habittracker.ui.theme.TextSecondary
 import com.progress.habittracker.ui.theme.TextTertiary
-import com.progress.habittracker.ui.viewmodel.AddHabitViewModel
-import com.progress.habittracker.ui.viewmodel.AddHabitViewModelFactory
+import com.progress.habittracker.ui.viewmodel.AddHabitViewModel // ViewModel
+import com.progress.habittracker.ui.viewmodel.AddHabitViewModelFactory // ViewModel Factory
 
 /**
- * AddHabitScreen - Új habit létrehozása (Design frissítve - Dark Theme)
+ * AddHabitScreen - Új szokás (Habit) létrehozása
+ *
+ * Ez a képernyő űrlapot biztosít a felhasználónak egy új szokás definiálásához.
  *
  * Funkciók:
- * - Habit név megadása (kötelező)
- * - Leírás/motiváció (opcionális) - short explanation
- * - Goal megadása (kötelező)
- * - Kategória választás ikonnal (kötelező)
- * - Dark theme styling
- * - Cancel és Create gombok
- * - Habit mentése -> POST /habit
+ * 1. Szokás nevének megadása (Kötelező).
+ * 2. Leírás vagy motiváció megadása (Opcionális).
+ * 3. Cél (Goal) meghatározása (pl. "10 pages", "30 mins") (Kötelező).
+ * 4. Kategória kiválasztása egy listából (Kötelező).
+ * 5. Mentés gomb: Validáció után elküldi az adatokat a szervernek.
+ * 6. Mégse gomb: Visszalépés mentés nélkül.
  *
- * @param navController Navigációs controller
+ * @param navController Navigációs vezérlő a visszalépéshez.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddHabitScreen(
     navController: NavController
 ) {
-    // ViewModel inicializálás Factory-val
+    // Függőségek inicializálása
     val tokenManager = remember { TokenManager(navController.context) }
     val habitRepository = remember { HabitRepository(tokenManager) }
     val viewModelFactory = remember { AddHabitViewModelFactory(habitRepository) }
+    
+    // ViewModel létrehozása a Factory segítségével
     val viewModel: AddHabitViewModel = viewModel(factory = viewModelFactory)
 
-    // UI state
+    // UI állapot figyelése (StateFlow -> State)
     val uiState by viewModel.uiState.collectAsState()
 
-    // Snackbar state
+    // Snackbar állapot a hibaüzenetek megjelenítéséhez
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Automatikus navigáció vissza sikeres létrehozás után
+    // Sikeres létrehozás figyelése: Ha true, visszanavigálunk az előző képernyőre
     LaunchedEffect(uiState.createSuccess) {
         if (uiState.createSuccess) {
             navController.popBackStack()
         }
     }
 
-    // Error handling Snackbar
+    // Hibaüzenetek figyelése és megjelenítése Snackbar-on
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             snackbarHostState.showSnackbar(
                 message = error,
                 duration = SnackbarDuration.Short
             )
-            viewModel.clearError()
+            viewModel.clearError() // Hiba törlése megjelenítés után
         }
     }
 
+    // Scaffold: Az oldal alapszerkezete (TopBar, Snackbar, Content)
     Scaffold(
         topBar = {
             TopAppBar(
@@ -104,8 +110,9 @@ fun AddHabitScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = DarkBackground
     ) { paddingValues ->
+        // Tartalom megjelenítése
         if (uiState.isLoadingCategories) {
-            // Loading state
+            // Töltés állapot: Spinner megjelenítése
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -115,22 +122,22 @@ fun AddHabitScreen(
                 CircularProgressIndicator(color = PrimaryPurple)
             }
         } else {
-            // Main content
+            // Űrlap megjelenítése
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Scrollable content
+                // Görgethető tartalom (LazyColumn)
                 LazyColumn(
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(1f) // Kitölti a rendelkezésre álló helyet a gombok felett
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp),
                     contentPadding = PaddingValues(vertical = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    // Habit név
+                    // 1. Mező: Habit név
                     item {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
@@ -163,7 +170,7 @@ fun AddHabitScreen(
                         }
                     }
 
-                    // Leírás/Motiváció
+                    // 2. Mező: Leírás / Motiváció
                     item {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
@@ -204,7 +211,7 @@ fun AddHabitScreen(
                         }
                     }
 
-                    // Goal
+                    // 3. Mező: Cél (Goal)
                     item {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
@@ -237,7 +244,7 @@ fun AddHabitScreen(
                         }
                     }
 
-                    // Kategória választás
+                    // 4. Mező: Kategória választás
                     item {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
@@ -257,13 +264,13 @@ fun AddHabitScreen(
                         }
                     }
 
-                    // Kategória grid
+                    // Kategória választó rács (Grid)
                     item {
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(3),
+                            columns = GridCells.Fixed(3), // 3 oszlopos elrendezés
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.height(300.dp)
+                            modifier = Modifier.height(300.dp) // Fix magasság a görgetéshez
                         ) {
                             items(uiState.categories) { category ->
                                 CategoryItem(
@@ -275,20 +282,20 @@ fun AddHabitScreen(
                         }
                     }
 
-                    // Extra spacing
+                    // Extra térköz az alján
                     item {
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
                 
-                // Bottom buttons (Cancel és Create)
+                // Alsó gombsor (Mégse és Létrehozás)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Cancel gomb
+                    // Mégse gomb (Cancel)
                     OutlinedButton(
                         onClick = { navController.popBackStack() },
                         modifier = Modifier
@@ -311,10 +318,10 @@ fun AddHabitScreen(
                         )
                     }
                     
-                    // Create gomb
+                    // Létrehozás gomb (Create)
                     Button(
                         onClick = { viewModel.createHabit() },
-                        enabled = !uiState.isCreating,
+                        enabled = !uiState.isCreating, // Letiltva, ha éppen mentés van folyamatban
                         modifier = Modifier
                             .weight(1f)
                             .height(54.dp),
@@ -326,6 +333,7 @@ fun AddHabitScreen(
                         shape = RoundedCornerShape(27.dp)
                     ) {
                         if (uiState.isCreating) {
+                            // Töltés jelző a gombon belül
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 color = TextPrimary
@@ -345,11 +353,11 @@ fun AddHabitScreen(
 }
 
 /**
- * CategoryItem - Kategória választó elem (Dark Theme)
+ * CategoryItem - Egy kategória megjelenítése a rácsban
  *
- * @param category Kategória adatai
- * @param isSelected Ki van-e választva
- * @param onSelect Kiválasztás callback
+ * @param category A megjelenítendő kategória adatai.
+ * @param isSelected Igaz, ha ez a kategória van kiválasztva.
+ * @param onSelect Callback függvény, ami a kategóriára kattintáskor hívódik meg.
  */
 @Composable
 fun CategoryItem(
@@ -359,7 +367,7 @@ fun CategoryItem(
 ) {
     Card(
         modifier = Modifier
-            .aspectRatio(1f)
+            .aspectRatio(1f) // Négyzet alakú kártya
             .clickable(onClick = onSelect)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
@@ -368,7 +376,7 @@ fun CategoryItem(
             ),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected)
-                PrimaryPurple.copy(alpha = 0.1f)
+                PrimaryPurple.copy(alpha = 0.1f) // Halvány lila háttér, ha kiválasztva
             else
                 DarkSurface
         ),
@@ -381,17 +389,17 @@ fun CategoryItem(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Kategória ikon (emoji vagy első betű)
+            // Kategória ikon megjelenítése
             val iconUrl = category.iconUrl
             if (iconUrl != null && iconUrl.length == 1) {
-                // Ha emoji/single character
+                // Ha az ikon egy karakter (pl. emoji)
                 Text(
                     text = iconUrl,
                     fontSize = 32.sp,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             } else {
-                // Első betű vagy default ikon
+                // Ha nincs ikon, vagy nem karakter, alapértelmezett ikon
                 Icon(
                     imageVector = Icons.Default.Category,
                     contentDescription = null,
@@ -402,7 +410,7 @@ fun CategoryItem(
                 )
             }
 
-            // Kategória név
+            // Kategória neve
             Text(
                 text = category.name,
                 style = MaterialTheme.typography.bodySmall,

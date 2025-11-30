@@ -44,20 +44,21 @@ import com.progress.habittracker.ui.viewmodel.AuthViewModel
 import com.progress.habittracker.ui.viewmodel.AuthViewModelFactory
 
 /**
- * LoginScreen - Bejelentkezési képernyő (Design frissítve)
- * 
- * Funkciók:
- * - Login/Register tab switcher
- * - "Progr3SS" branding + "Habit Planner & Tracker" alcím
- * - Email és jelszó beviteli mezők (dark theme)
- * - "Forgot Password?" link
- * - Bejelentkezés gomb -> AuthViewModel.signIn()
- * - Google bejelentkezés gomb (csak UI, nincs implementálva)
- * - Validáció és hibaüzenetek
- * - Loading state megjelenítése
- * 
- * @param navController Navigációs controller
- * @param viewModel Auth ViewModel
+ * LoginScreen - Bejelentkezési képernyő
+ *
+ * Ez a képernyő felelős a felhasználók bejelentkeztetéséért.
+ * Tartalmazza az email és jelszó beviteli mezőket, valamint a bejelentkezés gombot.
+ * Lehetőséget biztosít a regisztrációs képernyőre való átváltásra is.
+ *
+ * Főbb funkciók:
+ * - Felhasználói adatok bekérése (email, jelszó).
+ * - Validáció (email formátum, üres mezők).
+ * - Kommunikáció az AuthViewModel-lel a bejelentkezési folyamat kezelésére.
+ * - Navigáció a főképernyőre sikeres bejelentkezés esetén.
+ * - Hibaüzenetek megjelenítése sikertelen bejelentkezéskor.
+ *
+ * @param navController A navigációért felelős vezérlő, amely lehetővé teszi a képernyők közötti váltást.
+ * @param viewModel Az autentikációs logikát kezelő ViewModel. Alapértelmezetten egy új példányt hoz létre a Factory segítségével.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,44 +68,52 @@ fun LoginScreen(
         factory = AuthViewModelFactory(LocalContext.current)
     )
 ) {
-    // State-ek a beviteli mezőkhöz
+    // Állapotváltozók a beviteli mezők értékeinek tárolására
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var isLoginTab by remember { mutableStateOf(true) } // Login/Register tab switcher
     
-    // Focus manager a következő mezőre ugráshoz
+    // A jelszó láthatóságának állapota (rejtett/látható)
+    var passwordVisible by remember { mutableStateOf(false) }
+    
+    // Tab váltó állapota (Login/Register). Jelenleg csak UI elemként funkcionál a váltás animációjához vagy jelzéséhez.
+    var isLoginTab by remember { mutableStateOf(true) }
+    
+    // A fókusz kezelője, segítségével tudunk a billentyűzeten a "Következő" gombra kattintva a következő mezőre ugrani
     val focusManager = LocalFocusManager.current
     
-    // Auth state megfigyelése
+    // Az autentikációs folyamat állapotának figyelése a ViewModel-ből (pl. Loading, Success, Error)
     val authState by viewModel.authState.collectAsState()
     
-    // Sikeres login esetén navigáció
+    // Hatás (Effect), amely akkor fut le, ha az authState változik.
+    // Ha sikeres a bejelentkezés, navigálunk a Home képernyőre.
     LaunchedEffect(authState) {
         if (authState is AuthViewModel.AuthState.Success) {
             // Sikeres bejelentkezés -> Home Screen
             navController.navigate(Screen.Home.route) {
-                // Töröljük az összes auth képernyőt a back stack-ből
+                // Töröljük az összes auth képernyőt a back stack-ből, hogy a "Vissza" gomb ne vigyen vissza a bejelentkezéshez
                 popUpTo(Screen.Login.route) { inclusive = true }
             }
+            // ViewModel állapotának alaphelyzetbe állítása, hogy visszatéréskor ne maradjon "Success" állapotban
             viewModel.resetState()
         }
     }
     
-    // UI - Teljes képernyős dark background
+    // A képernyő alapvető elrendezése: Teljes képernyős doboz sötét háttérrel
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
             .padding(24.dp)
     ) {
+        // Oszlop elrendezés a tartalmak egymás alá helyezéséhez
         Column(
             modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally // Középre igazítás vízszintesen
         ) {
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(60.dp)) // Felső margó
             
-            // Logo és cím - "Progr3SS" Habit Planner & Tracker
+            // Alkalmazás logója és neve: "Progr3SS"
+            // A szöveg formázása (színek) buildAnnotatedString segítségével történik
             Text(
                 text = buildAnnotatedString {
                     withStyle(style = SpanStyle(color = TextPrimary)) {
@@ -124,6 +133,7 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(8.dp))
             
+            // Alcím: "Habit Planner & Tracker"
             Text(
                 text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.app_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
@@ -133,7 +143,9 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(48.dp))
             
-            // Login/Register Tab Switcher
+            // Login/Register Tab Switcher (Váltógomb)
+            // Ez a komponens vizuálisan jelzi, hogy a felhasználó a Login vagy Register oldalon van-e,
+            // és lehetőséget ad a váltásra.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -141,17 +153,17 @@ fun LoginScreen(
                     .background(DarkSurface, RoundedCornerShape(24.dp)),
                 horizontalArrangement = Arrangement.Center
             ) {
-                // Login Tab
+                // Login Tab Gomb
                 Button(
                     onClick = { 
                         isLoginTab = true
-                        // Navigálás a Register-ről Login-ra (ha szükséges)
+                        // Itt már a Login képernyőn vagyunk, így nem kell navigálni
                     },
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isLoginTab) PrimaryPurple else Color.Transparent,
+                        containerColor = if (isLoginTab) PrimaryPurple else Color.Transparent, // Aktív állapot jelzése színnel
                         contentColor = if (isLoginTab) TextPrimary else TextSecondary
                     ),
                     shape = RoundedCornerShape(24.dp)
@@ -162,17 +174,17 @@ fun LoginScreen(
                     )
                 }
                 
-                // Register Tab
+                // Register Tab Gomb
                 Button(
                     onClick = { 
-                        // Navigálás Register screen-re
+                        // Navigálás a Regisztrációs képernyőre
                         navController.navigate(Screen.Register.route)
                     },
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
+                        containerColor = Color.Transparent, // Inaktív állapot
                         contentColor = TextSecondary
                     ),
                     shape = RoundedCornerShape(24.dp)
@@ -186,7 +198,7 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
             
-            // Email mező
+            // Email beviteli mező
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email),
@@ -206,11 +218,11 @@ fun LoginScreen(
                         ) 
                     },
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
-                        imeAction = ImeAction.Next
+                        keyboardType = KeyboardType.Email, // Email billentyűzet
+                        imeAction = ImeAction.Next // "Következő" gomb megjelenítése
                     ),
                     keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) } // Ugrás a jelszó mezőre
                     ),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -224,9 +236,11 @@ fun LoginScreen(
                         cursorColor = PrimaryPurple
                     ),
                     shape = RoundedCornerShape(12.dp),
+                    // Hiba jelzése, ha az email nem üres és nem érvényes formátumú
                     isError = email.isNotEmpty() && !viewModel.isValidEmail(email)
                 )
                 
+                // Hibaüzenet megjelenítése érvénytelen email esetén
                 if (email.isNotEmpty() && !viewModel.isValidEmail(email)) {
                     Text(
                         text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email_invalid),
@@ -239,7 +253,7 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Jelszó mező
+            // Jelszó beviteli mező
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password),
@@ -258,6 +272,7 @@ fun LoginScreen(
                             color = TextTertiary
                         ) 
                     },
+                    // Jelszó láthatóságának kapcsolója (szem ikon)
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
@@ -273,17 +288,19 @@ fun LoginScreen(
                             )
                         }
                     },
+                    // Vizuális transzformáció: csillagok vagy szöveg megjelenítése
                     visualTransformation = if (passwordVisible) 
                         VisualTransformation.None 
                     else 
                         PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
+                        imeAction = ImeAction.Done // "Kész" gomb megjelenítése
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            focusManager.clearFocus()
+                            focusManager.clearFocus() // Billentyűzet elrejtése
+                            // Ha minden érvényes, indítsuk a bejelentkezést
                             if (viewModel.isValidEmail(email) && password.isNotEmpty()) {
                                 viewModel.signIn(email, password)
                             }
@@ -306,10 +323,10 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            // Forgot Password link
+            // "Elfelejtett jelszó" link (Jelenleg nincs implementálva a funkció)
             TextButton(
                 onClick = { 
-                    // OPCIONÁLIS - Reset Password screen (nincs implementálva)
+                    // TODO: Reset Password képernyő implementálása és navigáció
                     // navController.navigate(Screen.ResetPassword.route)
                 },
                 modifier = Modifier.align(Alignment.End)
@@ -323,7 +340,7 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Log in gomb
+            // Bejelentkezés gomb
             Button(
                 onClick = {
                     if (viewModel.isValidEmail(email) && password.isNotEmpty()) {
@@ -333,6 +350,7 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
+                // Gomb letiltása, ha töltünk, vagy ha az adatok érvénytelenek
                 enabled = authState !is AuthViewModel.AuthState.Loading &&
                         viewModel.isValidEmail(email) &&
                         password.isNotEmpty(),
@@ -343,6 +361,7 @@ fun LoginScreen(
                 ),
                 shape = RoundedCornerShape(27.dp)
             ) {
+                // Töltésjelző vagy szöveg megjelenítése az állapottól függően
                 if (authState is AuthViewModel.AuthState.Loading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
@@ -357,7 +376,7 @@ fun LoginScreen(
                 }
             }
             
-            // Hibaüzenet megjelenítése
+            // Hibaüzenet megjelenítése, ha a bejelentkezés sikertelen volt
             if (authState is AuthViewModel.AuthState.Error) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -371,7 +390,7 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // "or login with" divider
+            // "Vagy jelentkezz be ezzel" elválasztó
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -394,10 +413,10 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Google bejelentkezés gomb (csak UI, nincs implementálva)
+            // Google bejelentkezés gomb (Jelenleg csak UI, nincs implementálva)
             OutlinedButton(
                 onClick = { 
-                    // OPCIONÁLIS - Google Sign-In (nincs implementálva)
+                    // TODO: Google Sign-In implementálása
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -412,7 +431,7 @@ fun LoginScreen(
                 ),
                 shape = RoundedCornerShape(27.dp)
             ) {
-                // Google "G" icon (egyszerű text-tel helyettesítve)
+                // Google "G" betű ikonként
                 Text(
                     text = "G",
                     fontWeight = FontWeight.Bold,
@@ -431,7 +450,8 @@ fun LoginScreen(
 }
 
 /**
- * Preview a Login Screen-hez
+ * Előnézet a LoginScreen-hez.
+ * Lehetővé teszi a UI megtekintését az Android Studio Preview ablakában.
  */
 @Preview(showBackground = true)
 @Composable

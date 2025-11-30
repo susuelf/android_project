@@ -32,32 +32,38 @@ import java.io.File
 import java.io.FileOutputStream
 
 /**
- * Edit Profile Screen
- * 
- * Profil adatok szerkesztése
- * 
- * Funkciók:
- * - Username módosítása
- * - Description módosítása
- * - Profilkép feltöltése/csere
- * - Mentés
- * 
- * @param navController Navigációs kontroller
+ * Edit Profile Screen - Profil szerkesztése
+ *
+ * Ez a képernyő teszi lehetővé a felhasználó számára a profiladatainak módosítását.
+ *
+ * Főbb funkciók:
+ * - Felhasználónév (Username) módosítása.
+ * - Bemutatkozás (Description/Bio) módosítása.
+ * - Profilkép feltöltése vagy cseréje a galériából.
+ * - Email cím megjelenítése (csak olvasható).
+ * - Változtatások mentése a szerverre.
+ *
+ * @param navController A navigációért felelős vezérlő.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
     navController: NavController
 ) {
+    // Kontextus és függőségek inicializálása
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
     val profileRepository = remember { ProfileRepository(tokenManager) }
 
+    // ViewModel létrehozása a Factory segítségével
     val viewModel: EditProfileViewModel = viewModel(
         factory = EditProfileViewModelFactory(profileRepository)
     )
 
+    // UI állapot figyelése a ViewModel-ből
     val uiState by viewModel.uiState.collectAsState()
+    
+    // Snackbar állapot a hibaüzenetek megjelenítéséhez
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Automatikus visszanavigálás sikeres mentés után
@@ -78,30 +84,37 @@ fun EditProfileScreen(
         }
     }
 
-    // Image picker launcher
+    // Képválasztó (Image Picker) indítója
+    // Ez kezeli a galériából való képkiválasztás eredményét
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            // URI-ból File objektum készítése
+            // Ha a felhasználó kiválasztott egy képet (URI nem null)
             try {
+                // URI-ból File objektum készítése:
+                // 1. Megnyitjuk a bemeneti stream-et az URI-hoz.
                 val inputStream = context.contentResolver.openInputStream(uri)
+                // 2. Létrehozunk egy ideiglenes fájlt a cache könyvtárban.
                 val file = File(context.cacheDir, "profile_image_${System.currentTimeMillis()}.jpg")
                 val outputStream = FileOutputStream(file)
                 
+                // 3. Átmásoljuk a tartalmat.
                 inputStream?.use { input ->
                     outputStream.use { output ->
                         input.copyTo(output)
                     }
                 }
                 
+                // 4. Átadjuk a fájlt a ViewModel-nek.
                 viewModel.selectImage(file)
             } catch (e: Exception) {
-                // Error handling
+                // Hiba esetén itt lehetne kezelni (pl. logolás)
             }
         }
     }
 
+    // Scaffold: Az alapvető képernyőszerkezet
     Scaffold(
         topBar = {
             TopAppBar(
@@ -118,17 +131,21 @@ fun EditProfileScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
+        // Tartalom megjelenítése az állapottól függően
         when {
             uiState.isLoading -> {
+                // Töltés közben
                 LoadingState(modifier = Modifier.padding(paddingValues))
             }
 
             uiState.profile != null -> {
+                // Ha a profil adatok be vannak töltve, megjelenítjük a szerkesztő felületet
                 EditProfileContent(
                     uiState = uiState,
                     onUsernameChange = viewModel::setUsername,
                     onDescriptionChange = viewModel::setDescription,
                     onImagePickerClick = {
+                        // Képválasztó indítása (csak képeket engedélyezünk)
                         imagePickerLauncher.launch("image/*")
                     },
                     onSaveClick = viewModel::saveProfile,
@@ -137,6 +154,7 @@ fun EditProfileScreen(
             }
 
             else -> {
+                // Hibaállapot, ha nem sikerült betölteni a profilt
                 ErrorState(
                     message = "Nem sikerült betölteni a profilt",
                     onRetry = { viewModel.loadProfile() },
@@ -147,6 +165,9 @@ fun EditProfileScreen(
     }
 }
 
+/**
+ * A szerkesztő felület tartalma.
+ */
 @Composable
 private fun EditProfileContent(
     uiState: EditProfileViewModel.EditProfileUiState,
@@ -159,12 +180,12 @@ private fun EditProfileContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()) // Görgethető tartalom
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Profilkép szerkesztés
+        // 1. Profilkép szerkesztése szekció
         ProfileImageSection(
             currentImageUrl = uiState.profile?.profileImageUrl,
             selectedImageFile = uiState.selectedImageFile,
@@ -172,16 +193,16 @@ private fun EditProfileContent(
             isUploading = uiState.isUploadingImage
         )
 
-        // Email (read-only)
+        // 2. Email cím (csak olvasható)
         EmailCard(email = uiState.profile?.email ?: "")
 
-        // Username szerkesztés
+        // 3. Felhasználónév szerkesztése
         UsernameCard(
             username = uiState.username,
             onUsernameChange = onUsernameChange
         )
 
-        // Description szerkesztés
+        // 4. Bemutatkozás (Description) szerkesztése
         DescriptionCard(
             description = uiState.description,
             onDescriptionChange = onDescriptionChange
@@ -189,12 +210,13 @@ private fun EditProfileContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Mentés gomb
+        // 5. Mentés gomb
         Button(
             onClick = onSaveClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
+            // Gomb letiltása, ha éppen mentés vagy képfeltöltés zajlik
             enabled = !uiState.isUpdating && !uiState.isUploadingImage
         ) {
             if (uiState.isUpdating || uiState.isUploadingImage) {
@@ -209,6 +231,10 @@ private fun EditProfileContent(
     }
 }
 
+/**
+ * Profilkép megjelenítése és szerkesztése.
+ * Kezeli a jelenlegi képet, a kiválasztott új képet és a feltöltési állapotot.
+ */
 @Composable
 private fun ProfileImageSection(
     currentImageUrl: String?,
@@ -223,7 +249,7 @@ private fun ProfileImageSection(
         Box(
             contentAlignment = Alignment.Center
         ) {
-            // Profilkép megjelenítése
+            // Profilkép megjelenítése kör alakban
             Surface(
                 modifier = Modifier.size(140.dp),
                 shape = CircleShape,
@@ -231,7 +257,7 @@ private fun ProfileImageSection(
                 border = BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
             ) {
                 if (selectedImageFile != null) {
-                    // Lokálisan kiválasztott kép
+                    // Ha van újonnan kiválasztott kép (lokális fájl), azt jelenítjük meg
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(selectedImageFile)
@@ -244,7 +270,7 @@ private fun ProfileImageSection(
                         contentScale = ContentScale.Crop
                     )
                 } else if (!currentImageUrl.isNullOrBlank()) {
-                    // Meglévő profilkép
+                    // Ha nincs új kép, de van meglévő URL, azt töltjük be
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(currentImageUrl)
@@ -257,7 +283,7 @@ private fun ProfileImageSection(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    // Placeholder (felhasználó neve kezdőbetűje)
+                    // Ha nincs kép, egy placeholder ikont jelenítünk meg
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -272,7 +298,7 @@ private fun ProfileImageSection(
                 }
             }
 
-            // Loading overlay
+            // Töltésjelző réteg (overlay), ha éppen feltöltés zajlik
             if (isUploading) {
                 Surface(
                     modifier = Modifier.size(140.dp),
@@ -289,7 +315,7 @@ private fun ProfileImageSection(
             }
         }
 
-        // Kép választás gomb
+        // Képválasztás gomb
         OutlinedButton(
             onClick = onImagePickerClick,
             enabled = !isUploading
@@ -305,6 +331,10 @@ private fun ProfileImageSection(
     }
 }
 
+/**
+ * Email cím megjelenítése kártyán.
+ * Ez a mező nem szerkeszthető.
+ */
 @Composable
 private fun EmailCard(email: String) {
     Card(
@@ -337,6 +367,9 @@ private fun EmailCard(email: String) {
     }
 }
 
+/**
+ * Felhasználónév szerkesztése kártyán.
+ */
 @Composable
 private fun UsernameCard(
     username: String,
@@ -365,6 +398,10 @@ private fun UsernameCard(
     }
 }
 
+/**
+ * Bemutatkozás (Description) szerkesztése kártyán.
+ * Tartalmaz karakterszámlálót is.
+ */
 @Composable
 private fun DescriptionCard(
     description: String,
@@ -395,6 +432,7 @@ private fun DescriptionCard(
                 maxLines = 5,
                 isError = isOverLimit,
                 supportingText = {
+                    // Karakterszámláló megjelenítése
                     Text(
                         text = "${description.length} / $maxLength",
                         color = if (isOverLimit) {
@@ -409,6 +447,9 @@ private fun DescriptionCard(
     }
 }
 
+/**
+ * Töltési állapot megjelenítése.
+ */
 @Composable
 private fun LoadingState(modifier: Modifier = Modifier) {
     Box(
@@ -419,6 +460,9 @@ private fun LoadingState(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Hibaállapot megjelenítése újrapóbálkozási lehetőséggel.
+ */
 @Composable
 private fun ErrorState(
     message: String,

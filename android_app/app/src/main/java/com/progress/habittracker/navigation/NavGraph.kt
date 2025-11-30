@@ -1,42 +1,43 @@
 package com.progress.habittracker.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
-// Auth Screen import-ok
-import com.progress.habittracker.ui.screens.auth.SplashScreen
-import com.progress.habittracker.ui.screens.auth.LoginScreen
-import com.progress.habittracker.ui.screens.auth.RegisterScreen
-// Home Screen import
-import com.progress.habittracker.ui.screens.home.HomeScreen
-// Create Schedule Screen import
-import com.progress.habittracker.ui.screens.createschedule.CreateScheduleScreen
-// Add Habit Screen import
-import com.progress.habittracker.ui.screens.addhabit.AddHabitScreen
-// Add Progress Screen import
-import com.progress.habittracker.ui.screens.addprogress.AddProgressScreen
-// Schedule Details Screen import
-import com.progress.habittracker.ui.screens.scheduledetails.ScheduleDetailsScreen
-// Edit Schedule Screen import
-import com.progress.habittracker.ui.screens.editschedule.EditScheduleScreen
-// Profile Screen import
-import com.progress.habittracker.ui.screens.profile.ProfileScreen
-// Edit Profile Screen import
-import com.progress.habittracker.ui.screens.editprofile.EditProfileScreen
+// Compose és Navigation alapkönyvtárak
+import androidx.compose.runtime.Composable // Composable annotáció
+import androidx.compose.ui.Modifier // UI módosítók
+import androidx.navigation.NavHostController // Navigáció vezérlő
+import androidx.navigation.NavType // Navigációs argumentum típusok
+import androidx.navigation.compose.NavHost // Navigációs konténer
+import androidx.navigation.compose.composable // Útvonal definíció
+import androidx.navigation.navArgument // Útvonal argumentum definíció
+
+// Képernyők (Screens) importálása
+// Hitelesítés (Auth) képernyők
+import com.progress.habittracker.ui.screens.auth.SplashScreen // Indító képernyő
+import com.progress.habittracker.ui.screens.auth.LoginScreen // Bejelentkezés
+import com.progress.habittracker.ui.screens.auth.RegisterScreen // Regisztráció
+
+// Fő funkciók képernyői
+import com.progress.habittracker.ui.screens.home.HomeScreen // Kezdőlap (Dashboard)
+import com.progress.habittracker.ui.screens.createschedule.CreateScheduleScreen // Új időbeosztás létrehozása
+import com.progress.habittracker.ui.screens.addhabit.AddHabitScreen // Új szokás hozzáadása
+import com.progress.habittracker.ui.screens.addprogress.AddProgressScreen // Haladás rögzítése
+import com.progress.habittracker.ui.screens.scheduledetails.ScheduleDetailsScreen // Időbeosztás részletei
+import com.progress.habittracker.ui.screens.editschedule.EditScheduleScreen // Időbeosztás szerkesztése
+import com.progress.habittracker.ui.screens.profile.ProfileScreen // Profil megtekintése
+import com.progress.habittracker.ui.screens.editprofile.EditProfileScreen // Profil szerkesztése
 
 /**
- * NavGraph - Navigációs gráf definiálása
+ * NavGraph - Az alkalmazás navigációs térképe
  * 
- * Ez a Composable függvény hozza létre a teljes navigációs struktúrát.
- * Minden screen-t itt definiálunk és kötünk össze.
+ * Ez a Composable függvény definiálja az összes lehetséges útvonalat (route) az alkalmazásban,
+ * és összeköti őket a megfelelő képernyőkkel (Screen Composable-k).
  * 
- * @param navController NavHostController a navigációhoz
- * @param modifier Modifier a NavHost-hoz
- * @param startDestination Kezdő képernyő (alapértelmezett: Splash)
+ * Működés:
+ * A NavHost figyeli a navController állapotát, és kicseréli a megjelenített tartalmat
+ * az aktuális útvonalnak megfelelően.
+ * 
+ * @param navController A navigációt vezérlő objektum (ezt adjuk tovább a képernyőknek is).
+ * @param modifier A NavHost-ra vonatkozó módosítók (pl. padding).
+ * @param startDestination Az alkalmazás indulásakor megjelenő első képernyő útvonala.
  */
 @Composable
 fun NavGraph(
@@ -44,56 +45,56 @@ fun NavGraph(
     modifier: Modifier = Modifier,
     startDestination: String = Screen.Splash.route
 ) {
+    // NavHost: A navigációs gráf konténere
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
     ) {
         
-        // ==================== AUTH SCREENS ====================
+        // ==================== AUTH SCREENS (Hitelesítés) ====================
         
         /**
-         * Splash Screen
-         * - Automatikus login ellenőrzés
-         * - Átirányítás Login-ra vagy Home-ra
+         * Splash Screen (Indító képernyő)
+         * Funkció: Ellenőrzi, hogy van-e érvényes bejelentkezési token.
+         * Navigáció: Ha van token -> Home, ha nincs -> Login.
          */
         composable(route = Screen.Splash.route) {
             SplashScreen(navController = navController)
         }
         
         /**
-         * Login Screen
-         * - Bejelentkezés email + jelszó
-         * - Navigáció: Register, Home
+         * Login Screen (Bejelentkezés)
+         * Funkció: Felhasználó beléptetése email és jelszó megadásával.
+         * Navigáció: Sikeres belépés -> Home, Nincs fiók -> Register.
          */
         composable(route = Screen.Login.route) {
             LoginScreen(navController = navController)
         }
         
         /**
-         * Register Screen
-         * - Regisztráció username, email, jelszó
-         * - Navigáció: Login, Home
+         * Register Screen (Regisztráció)
+         * Funkció: Új felhasználói fiók létrehozása.
+         * Navigáció: Sikeres regisztráció -> Login vagy Home.
          */
         composable(route = Screen.Register.route) {
             RegisterScreen(navController = navController)
         }
         
-        // ==================== MAIN SCREENS ====================
+        // ==================== MAIN SCREENS (Fő funkciók) ====================
         
         /**
-         * Home Screen (Dashboard)
-         * - Napi schedule-ok listája
-         * - Navigáció: ScheduleDetails, CreateSchedule, Profile
+         * Home Screen (Kezdőlap / Dashboard)
+         * Funkció: Megjeleníti a napi teendőket (Schedule) és az aktuális haladást.
+         * Ez az alkalmazás központi képernyője.
          */
         composable(route = Screen.Home.route) {
             HomeScreen(navController = navController)
         }
         
         /**
-         * Create Schedule Screen
-         * - Új schedule létrehozása
-         * - Navigáció: vissza Home-ra
+         * Create Schedule Screen (Új időbeosztás)
+         * Funkció: Új napirendi pont létrehozása.
          */
         composable(route = Screen.CreateSchedule.route) {
             CreateScheduleScreen(
@@ -101,23 +102,23 @@ fun NavGraph(
             )
         }
         
-        // ==================== SCHEDULE DETAILS & EDIT ====================
+        // ==================== SCHEDULE DETAILS & EDIT (Részletek és Szerkesztés) ====================
         
         /**
-         * Schedule Details Screen
-         * - Schedule részletei ID alapján
-         * - Navigáció: EditSchedule, AddProgress, vissza
-         * 
-         * Paraméter: scheduleId (Int)
+         * Schedule Details Screen (Időbeosztás részletei)
+         * Funkció: Egy konkrét napirendi pont részletes megjelenítése.
+         * Paraméter: scheduleId (Int) - A megjelenítendő elem azonosítója.
+         * Navigáció: Innen lehet továbbmenni szerkesztésre (EditSchedule) vagy haladás rögzítésére (AddProgress).
          */
         composable(
             route = Screen.ScheduleDetails.route,
             arguments = listOf(
                 navArgument("scheduleId") {
-                    type = NavType.IntType
+                    type = NavType.IntType // Az ID típusa egész szám
                 }
             )
         ) { backStackEntry ->
+            // Az ID kinyerése az útvonal argumentumokból
             val scheduleId = backStackEntry.arguments?.getInt("scheduleId") ?: 0
             
             ScheduleDetailsScreen(
@@ -127,11 +128,9 @@ fun NavGraph(
         }
         
         /**
-         * Edit Schedule Screen
-         * - Schedule szerkesztése ID alapján
-         * - Navigáció: vissza ScheduleDetails-re
-         * 
-         * Paraméter: scheduleId (Int)
+         * Edit Schedule Screen (Időbeosztás szerkesztése)
+         * Funkció: Meglévő napirendi pont módosítása.
+         * Paraméter: scheduleId (Int) - A szerkesztendő elem azonosítója.
          */
         composable(
             route = Screen.EditSchedule.route,
@@ -149,12 +148,11 @@ fun NavGraph(
             )
         }
         
-        // ==================== HABIT & PROGRESS ====================
+        // ==================== HABIT & PROGRESS (Szokások és Haladás) ====================
         
         /**
-         * Add Habit Screen
-         * - Új habit létrehozása
-         * - Navigáció: vissza
+         * Add Habit Screen (Új szokás hozzáadása)
+         * Funkció: Új szokás (Habit) definiálása, amit később be lehet ütemezni.
          */
         composable(route = Screen.AddHabit.route) {
             AddHabitScreen(
@@ -163,11 +161,9 @@ fun NavGraph(
         }
         
         /**
-         * Add Progress Screen
-         * - Progress hozzáadása schedule-hoz
-         * - Navigáció: vissza ScheduleDetails-re
-         * 
-         * Paraméter: scheduleId (Int)
+         * Add Progress Screen (Haladás rögzítése)
+         * Funkció: Egy adott napirendi ponthoz tartozó teljesítés rögzítése (pl. elolvastam 10 oldalt).
+         * Paraméter: scheduleId (Int) - Melyik napirendi ponthoz tartozik a haladás.
          */
         composable(
             route = Screen.AddProgress.route,
@@ -185,21 +181,20 @@ fun NavGraph(
             )
         }
         
-        // ==================== PROFILE ====================
+        // ==================== PROFILE (Profil kezelés) ====================
         
         /**
-         * Profile Screen
-         * - Felhasználó profilja és statisztikák
-         * - Navigáció: EditProfile, Logout -> Login
+         * Profile Screen (Profil megtekintése)
+         * Funkció: Felhasználói adatok, statisztikák és szokások listázása.
+         * Innen érhető el a kijelentkezés és a profil szerkesztése.
          */
         composable(route = Screen.Profile.route) {
             ProfileScreen(navController = navController)
         }
         
         /**
-         * Edit Profile Screen
-         * - Profil adatok szerkesztése
-         * - Navigáció: vissza Profile-ra
+         * Edit Profile Screen (Profil szerkesztése)
+         * Funkció: Felhasználói adatok (név, email, kép, leírás) módosítása.
          */
         composable(route = Screen.EditProfile.route) {
             EditProfileScreen(navController = navController)

@@ -46,20 +46,20 @@ import com.progress.habittracker.ui.viewmodel.AuthViewModel
 import com.progress.habittracker.ui.viewmodel.AuthViewModelFactory
 
 /**
- * RegisterScreen - Regisztrációs képernyő (Design frissítve)
- * 
- * Funkciók:
- * - Login/Register tab switcher
- * - "Progr3SS" branding + "Habit Planner & Tracker" alcím
- * - Felhasználónév, email, jelszó, jelszó megerősítés beviteli mezők (dark theme)
- * - Jelszó eltérés kezelése: piros szegély + hibaüzenet
- * - Regisztráció gomb -> AuthViewModel.signUp()
- * - Google regisztráció gomb (csak UI, nincs implementálva)
- * - Validáció és hibaüzenetek
- * - Loading state megjelenítése
- * 
- * @param navController Navigációs controller
- * @param viewModel Auth ViewModel
+ * RegisterScreen - Regisztrációs képernyő
+ *
+ * Ez a képernyő felelős az új felhasználók regisztrációjáért.
+ * Tartalmazza a felhasználónév, email, jelszó és jelszó megerősítés beviteli mezőket.
+ *
+ * Főbb funkciók:
+ * - Felhasználói adatok bekérése (felhasználónév, email, jelszó, jelszó megerősítés).
+ * - Validáció (email formátum, jelszó hossza, jelszavak egyezése).
+ * - Kommunikáció az AuthViewModel-lel a regisztrációs folyamat kezelésére.
+ * - Navigáció a főképernyőre sikeres regisztráció esetén.
+ * - Hibaüzenetek megjelenítése (pl. foglalt email, nem egyező jelszavak).
+ *
+ * @param navController A navigációért felelős vezérlő.
+ * @param viewModel Az autentikációs logikát kezelő ViewModel.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,25 +69,30 @@ fun RegisterScreen(
         factory = AuthViewModelFactory(LocalContext.current)
     )
 ) {
-    // State-ek a beviteli mezőkhöz
+    // Állapotváltozók a beviteli mezők értékeinek tárolására
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    
+    // Jelszó mezők láthatóságának állapota
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-    var isLoginTab by remember { mutableStateOf(false) } // Register tab aktív
     
-    // Focus manager
+    // Tab váltó állapota (Login/Register). Itt alapértelmezetten a Register aktív.
+    var isLoginTab by remember { mutableStateOf(false) }
+    
+    // Fókusz kezelő a mezők közötti navigációhoz
     val focusManager = LocalFocusManager.current
     
-    // Auth state megfigyelése
+    // Az autentikációs folyamat állapotának figyelése
     val authState by viewModel.authState.collectAsState()
     
-    // Jelszó eltérés ellenőrzése
+    // Jelszó eltérés ellenőrzése: ha a megerősítő mező nem üres és nem egyezik a jelszóval
     val passwordMismatch = confirmPassword.isNotEmpty() && password != confirmPassword
     
-    // Sikeres regisztráció esetén navigáció
+    // Hatás (Effect), amely akkor fut le, ha az authState változik.
+    // Sikeres regisztráció esetén navigálunk a Home képernyőre.
     LaunchedEffect(authState) {
         if (authState is AuthViewModel.AuthState.Success) {
             // Sikeres regisztráció -> Home Screen
@@ -99,22 +104,23 @@ fun RegisterScreen(
         }
     }
     
-    // UI - Teljes képernyős dark background
+    // UI - Teljes képernyős doboz sötét háttérrel
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
             .padding(24.dp)
     ) {
+        // Oszlop elrendezés, amely görgethető, ha a tartalom nem fér el a képernyőn
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState()), // Görgethetőség engedélyezése
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(60.dp))
             
-            // Logo és cím - "Progr3SS" Habit Planner & Tracker
+            // Alkalmazás logója és neve: "Progr3SS"
             Text(
                 text = buildAnnotatedString {
                     withStyle(style = SpanStyle(color = TextPrimary)) {
@@ -134,6 +140,7 @@ fun RegisterScreen(
             
             Spacer(modifier = Modifier.height(8.dp))
             
+            // Alcím
             Text(
                 text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.app_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
@@ -143,7 +150,7 @@ fun RegisterScreen(
             
             Spacer(modifier = Modifier.height(48.dp))
             
-            // Login/Register Tab Switcher
+            // Login/Register Tab Switcher (Váltógomb)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -151,17 +158,17 @@ fun RegisterScreen(
                     .background(DarkSurface, RoundedCornerShape(24.dp)),
                 horizontalArrangement = Arrangement.Center
             ) {
-                // Login Tab
+                // Login Tab Gomb
                 Button(
                     onClick = { 
-                        // Navigálás Login screen-re
+                        // Navigálás vissza a Login képernyőre
                         navController.popBackStack()
                     },
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
+                        containerColor = Color.Transparent, // Inaktív állapot
                         contentColor = TextSecondary
                     ),
                     shape = RoundedCornerShape(24.dp)
@@ -172,16 +179,17 @@ fun RegisterScreen(
                     )
                 }
                 
-                // Register Tab (aktív)
+                // Register Tab Gomb (Aktív)
                 Button(
                     onClick = { 
                         isLoginTab = false
+                        // Itt már a Register képernyőn vagyunk
                     },
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryPurple,
+                        containerColor = PrimaryPurple, // Aktív állapot jelzése színnel
                         contentColor = TextPrimary
                     ),
                     shape = RoundedCornerShape(24.dp)
@@ -195,7 +203,7 @@ fun RegisterScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
             
-            // Felhasználónév mező
+            // Felhasználónév beviteli mező
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.username),
@@ -238,7 +246,7 @@ fun RegisterScreen(
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Email mező
+            // Email beviteli mező
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email),
@@ -291,7 +299,7 @@ fun RegisterScreen(
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Jelszó mező
+            // Jelszó beviteli mező
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password),
@@ -363,7 +371,8 @@ fun RegisterScreen(
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Jelszó megerősítés mező - PIROS SZEGÉLY HA ELTÉR
+            // Jelszó megerősítés mező
+            // Ha a jelszavak nem egyeznek, piros keretet kap
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.confirm_password),
@@ -408,6 +417,7 @@ fun RegisterScreen(
                     keyboardActions = KeyboardActions(
                         onDone = {
                             focusManager.clearFocus()
+                            // Ha minden valid, indítsuk a regisztrációt
                             if (username.isNotEmpty() && 
                                 viewModel.isValidEmail(email) && 
                                 viewModel.isValidPassword(password) && 
@@ -457,6 +467,7 @@ fun RegisterScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
+                // Gomb letiltása, ha töltünk, vagy ha az adatok érvénytelenek
                 enabled = authState !is AuthViewModel.AuthState.Loading &&
                         username.isNotEmpty() &&
                         viewModel.isValidEmail(email) &&
@@ -497,7 +508,7 @@ fun RegisterScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // "or login with" divider
+            // "Vagy regisztrálj ezzel" elválasztó
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -523,7 +534,7 @@ fun RegisterScreen(
             // Google regisztráció gomb (csak UI, nincs implementálva)
             OutlinedButton(
                 onClick = { 
-                    // OPCIONÁLIS - Google Sign-Up (nincs implementálva)
+                    // TODO: Google Sign-Up implementálása
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -538,7 +549,7 @@ fun RegisterScreen(
                 ),
                 shape = RoundedCornerShape(27.dp)
             ) {
-                // Google "G" icon (egyszerű text-tel helyettesítve)
+                // Google "G" icon
                 Text(
                     text = "G",
                     fontWeight = FontWeight.Bold,
@@ -559,7 +570,7 @@ fun RegisterScreen(
 }
 
 /**
- * Preview a Register Screen-hez
+ * Előnézet a RegisterScreen-hez.
  */
 @Preview(showBackground = true)
 @Composable

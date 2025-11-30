@@ -43,25 +43,21 @@ import java.time.format.TextStyle
 import java.util.*
 
 /**
- * Home Screen - Főképernyő (Design frissítve - "Today's plan" + Bottom Navigation)
- * 
- * Az alkalmazás központi képernyője, ahol a felhasználó látja a napi schedule-jait.
- * 
- * Funkciók:
- * - Top Bar: Dátum navigáció (előző/következő nap, MA gomb)
- * - "Today's plan" header dátummal (Monday, Jul 10)
- * - Schedule-ok időszakok szerint csoportosítva (Morning 🌅, Afternoon 🍂, Night 🌙)
- * - Schedule-ok rendezve időrendi sorrendben
- * - Státusz jelzés és gyors státusz váltás (checkbox)
- * - Floating Action Button (cyan) -> Create Schedule
- * - Bottom Navigation Bar (Home, AI Assistant, Profile)
- * - Dark theme teljes képernyőn
- * - Üres állapot kezelése (nincs schedule)
- * - Hiba állapot kezelése
- * 
- * @param navController Navigációs controller
+ * Home Screen - Főképernyő
+ *
+ * Az alkalmazás központi képernyője, ahol a felhasználó látja a napi teendőit (schedule).
+ *
+ * Főbb funkciók:
+ * - Dátum navigáció: Előző/Következő nap, Ugrás a mai napra, Naptár választó.
+ * - "Today's plan" fejléc: Az aktuálisan kiválasztott nap megjelenítése.
+ * - Időbeosztások listázása: Napszakok szerint csoportosítva (Reggel, Délután, Este).
+ * - Státusz kezelés: Checkbox segítségével gyorsan állítható a státusz (Tervezett -> Befejezett).
+ * - Új időbeosztás létrehozása: Floating Action Button (FAB) segítségével.
+ * - Alsó navigációs sáv (Bottom Navigation): Navigáció a főbb képernyők között (Home, Profil).
+ *
+ * @param navController A navigációért felelős vezérlő.
  */
-@Suppress("NewApi") // Java Time API is available via desugaring
+@Suppress("NewApi") // Java Time API használata miatt (desugaring támogatott)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -69,38 +65,40 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
 
-    // ViewModel inicializálás Factory-val
+    // ViewModel és Repository-k inicializálása
     val tokenManager = remember { TokenManager(context) }
     val scheduleRepository = remember { ScheduleRepository(tokenManager) }
     val progressRepository = remember { ProgressRepository(tokenManager) }
+    
+    // ViewModel létrehozása a Factory segítségével
     val viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(scheduleRepository, progressRepository)
     )
 
-    // UI State collect
+    // UI állapot figyelése a ViewModel-ből
     val uiState by viewModel.uiState.collectAsState()
 
-    // Dátum formázók
+    // Dátum formázók inicializálása
     val dayOfWeekFormatter = remember { DateTimeFormatter.ofPattern("EEEE", Locale.ENGLISH) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH) }
     val topBarDateFormatter = remember { DateTimeFormatter.ofPattern("yyyy. MM. dd.") }
 
-    // Snackbar host state
+    // Snackbar állapot a hibaüzenetek megjelenítéséhez
     val snackbarHostState = remember { SnackbarHostState() }
     
-    // Date Picker state
+    // Dátumválasztó dialógus állapota
     var showDatePicker by remember { mutableStateOf(false) }
     
-    // Selected navigation item
-    var selectedNavItem by remember { mutableStateOf(0) } // 0 = Home
+    // Kiválasztott alsó navigációs elem (0 = Home)
+    var selectedNavItem by remember { mutableStateOf(0) }
     
-    // Frissítés amikor visszajövünk Edit Schedule-ből vagy más képernyőről
+    // Adatok frissítése, amikor a képernyő újra előtérbe kerül (pl. visszatérés szerkesztésből)
     val navBackStackEntry = navController.currentBackStackEntry
     LaunchedEffect(navBackStackEntry) {
         viewModel.refreshSchedules()
     }
 
-    // Error handling - Snackbar megjelenítése
+    // Hibaüzenetek kezelése
     LaunchedEffect(uiState.error) {
         uiState.error?.let { errorMessage ->
             snackbarHostState.showSnackbar(
@@ -111,6 +109,7 @@ fun HomeScreen(
         }
     }
 
+    // Dátumválasztó dialógus megjelenítése
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = uiState.selectedDate
@@ -146,23 +145,24 @@ fun HomeScreen(
         }
     }
 
+    // Scaffold: Az alapvető képernyőszerkezet
     Scaffold(
         topBar = {
-            // Top App Bar - Dátum navigáció
+            // Felső sáv: Dátum navigáció
             TopAppBar(
                 title = {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Dátum
+                        // Dátum (pl. 2023. 10. 27.)
                         Text(
                             text = uiState.selectedDate.format(topBarDateFormatter),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
-                        // Hét napja
+                        // Hét napja (pl. Friday)
                         Text(
                             text = uiState.selectedDate.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
                                 .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ENGLISH) else it.toString() },
@@ -172,7 +172,7 @@ fun HomeScreen(
                     }
                 },
                 navigationIcon = {
-                    // Előző nap
+                    // Előző nap gomb
                     IconButton(onClick = { viewModel.goToPreviousDay() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -182,7 +182,7 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    // Ma gomb
+                    // "MA" gomb
                     TextButton(onClick = { viewModel.goToToday() }) {
                         Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.today_caps), color = TextPrimary)
                     }
@@ -196,7 +196,7 @@ fun HomeScreen(
                         )
                     }
 
-                    // Következő nap
+                    // Következő nap gomb
                     IconButton(onClick = { viewModel.goToNextDay() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
@@ -212,12 +212,12 @@ fun HomeScreen(
             )
         },
         bottomBar = {
-            // Bottom Navigation Bar
+            // Alsó navigációs sáv
             NavigationBar(
                 containerColor = DarkSurface,
                 contentColor = TextPrimary
             ) {
-                // Home
+                // Home menüpont
                 NavigationBarItem(
                     icon = { 
                         Icon(
@@ -240,7 +240,7 @@ fun HomeScreen(
                     )
                 )
                 
-                // Profile
+                // Profil menüpont
                 NavigationBarItem(
                     icon = { 
                         Icon(
@@ -265,7 +265,7 @@ fun HomeScreen(
             }
         },
         floatingActionButton = {
-            // FAB - Cyan színnel
+            // Lebegő akciógomb (FAB) - Új időbeosztás létrehozása
             FloatingActionButton(
                 onClick = { navController.navigate(Screen.CreateSchedule.route) },
                 containerColor = SuccessCyan,
@@ -285,7 +285,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // "Today's plan" Header
+            // "Today's plan" Fejléc
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -309,26 +309,26 @@ fun HomeScreen(
                 )
             }
             
-            // Tartalom
+            // Tartalom megjelenítése állapot szerint
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f)
             ) {
                 when {
-                    // Loading állapot
+                    // Töltés állapot
                     uiState.isLoading && uiState.schedules.isEmpty() -> {
                         LoadingState()
                     }
 
-                    // Üres állapot - nincs schedule
+                    // Üres állapot - nincs megjeleníthető elem
                     !uiState.isLoading && uiState.schedules.isEmpty() -> {
                         EmptyState(
                             onCreateSchedule = { navController.navigate(Screen.CreateSchedule.route) }
                         )
                     }
 
-                    // Schedules megjelenítése időszakok szerint csoportosítva
+                    // Lista megjelenítése napszakok szerint csoportosítva
                     else -> {
                         ScheduleListGroupedByTimeOfDay(
                             schedules = uiState.schedules,
@@ -349,9 +349,7 @@ fun HomeScreen(
 }
 
 /**
- * Loading State
- * 
- * Betöltés közbeni állapot megjelenítése
+ * Töltés állapotot megjelenítő komponens.
  */
 @Composable
 private fun LoadingState() {
@@ -374,11 +372,10 @@ private fun LoadingState() {
 }
 
 /**
- * Empty State
- * 
- * Üres állapot megjelenítése - nincs schedule
- * 
- * @param onCreateSchedule Callback az új schedule létrehozáshoz
+ * Üres állapotot megjelenítő komponens.
+ * Akkor jelenik meg, ha az adott napra nincs időbeosztás.
+ *
+ * @param onCreateSchedule Callback függvény az új időbeosztás létrehozásához.
  */
 @Composable
 private fun EmptyState(
@@ -433,15 +430,13 @@ private fun EmptyState(
 }
 
 /**
- * Schedule List csoportosítva napszak szerint
- * 
- * Schedules megjelenítése Morning, Afternoon, Night csoportokban
- * 
- * @param schedules Schedule-ok listája
- * @param isRefreshing Refresh folyamatban flag
- * @param onRefresh Refresh callback
- * @param onScheduleClick Schedule kattintás callback
- * @param onStatusToggle Státusz váltás callback
+ * Időbeosztások listázása napszakok szerint csoportosítva.
+ *
+ * @param schedules A megjelenítendő időbeosztások listája.
+ * @param isRefreshing Jelzi, ha éppen frissítés történik.
+ * @param onRefresh Callback a lista frissítéséhez.
+ * @param onScheduleClick Callback egy elemre kattintáskor.
+ * @param onStatusToggle Callback a státusz módosításakor.
  */
 @Composable
 private fun ScheduleListGroupedByTimeOfDay(
@@ -451,7 +446,7 @@ private fun ScheduleListGroupedByTimeOfDay(
     onScheduleClick: (Int) -> Unit,
     onStatusToggle: (Int, com.progress.habittracker.data.model.ScheduleStatus) -> Unit
 ) {
-    // Csoportosítás napszak szerint
+    // Csoportosítás napszak szerint és rendezés (Reggel -> Délután -> Este)
     val groupedSchedules = remember(schedules) {
         schedules.groupBy { schedule ->
             getTimeOfDay(schedule.startTime)
@@ -469,14 +464,14 @@ private fun ScheduleListGroupedByTimeOfDay(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 0.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Csoportok megjelenítése
+        // Csoportok iterálása
         groupedSchedules.forEach { (timeOfDay, scheduleGroup) ->
-            // Csoport header
+            // Csoport fejléc (pl. "Morning 🌅")
             item(key = "header_$timeOfDay") {
                 TimeOfDayHeader(timeOfDay)
             }
             
-            // Csoport schedule-ai
+            // Csoport elemei
             items(
                 items = scheduleGroup,
                 key = { it.id }
@@ -489,7 +484,7 @@ private fun ScheduleListGroupedByTimeOfDay(
             }
         }
 
-        // Extra padding a FAB miatt (és bottom nav bar miatt is)
+        // Extra térköz az alján a FAB és a Bottom Navigation miatt
         item {
             Spacer(modifier = Modifier.height(100.dp))
         }
@@ -497,7 +492,7 @@ private fun ScheduleListGroupedByTimeOfDay(
 }
 
 /**
- * Napszak enum
+ * Napszakok enumerációja.
  */
 private enum class TimeOfDay {
     Morning,    // 00:00 - 11:59
@@ -506,11 +501,11 @@ private enum class TimeOfDay {
 }
 
 /**
- * Meghatározza a napszakot a startTime alapján
+ * Segédfüggvény a napszak meghatározásához a kezdési idő alapján.
  */
 private fun getTimeOfDay(startTimeString: String): TimeOfDay {
     return try {
-        // Parse time
+        // Idő string parse-olása
         val timeStr = if (startTimeString.contains('T')) {
             startTimeString.substringAfter('T').substringBefore('Z')
         } else {
@@ -526,12 +521,12 @@ private fun getTimeOfDay(startTimeString: String): TimeOfDay {
             else -> TimeOfDay.Night
         }
     } catch (e: Exception) {
-        TimeOfDay.Morning // Default fallback
+        TimeOfDay.Morning // Alapértelmezett érték hiba esetén
     }
 }
 
 /**
- * Napszak header megjelenítése emoji-val
+ * Napszak fejléc megjelenítése ikonnal és szöveggel.
  */
 @Composable
 private fun TimeOfDayHeader(timeOfDay: TimeOfDay) {
@@ -565,44 +560,7 @@ private fun TimeOfDayHeader(timeOfDay: TimeOfDay) {
 }
 
 /**
- * Schedule List - régi verzió (backup)
- * 
- * Schedule-ok listája pull-to-refresh támogatással
- */
-@Composable
-private fun ScheduleList(
-    schedules: List<com.progress.habittracker.data.model.ScheduleResponseDto>,
-    isRefreshing: Boolean,
-    onRefresh: () -> Unit,
-    onScheduleClick: (Int) -> Unit,
-    onStatusToggle: (Int, com.progress.habittracker.data.model.ScheduleStatus) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Schedule-ok megjelenítése
-        items(
-            items = schedules,
-            key = { it.id }
-        ) { schedule ->
-            ScheduleItemCard(
-                schedule = schedule,
-                onScheduleClick = onScheduleClick,
-                onStatusToggle = onStatusToggle
-            )
-        }
-
-        // Extra padding a FAB miatt
-        item {
-            Spacer(modifier = Modifier.height(80.dp))
-        }
-    }
-}
-
-/**
- * Preview - Schedules-szel
+ * Előnézet (Preview) a Home képernyőhöz.
  */
 @Preview(showBackground = true)
 @Composable
@@ -613,7 +571,7 @@ fun HomeScreenPreview() {
 }
 
 /**
- * Preview - Üres állapot
+ * Előnézet (Preview) az üres állapothoz.
  */
 @Preview(showBackground = true)
 @Composable

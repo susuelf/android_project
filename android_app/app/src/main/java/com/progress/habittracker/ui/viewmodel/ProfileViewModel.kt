@@ -1,20 +1,24 @@
 package com.progress.habittracker.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import com.progress.habittracker.data.local.TokenManager
-import com.progress.habittracker.data.model.HabitResponseDto
-import com.progress.habittracker.data.model.ProfileResponseDto
-import com.progress.habittracker.data.repository.ProfileRepository
-import com.progress.habittracker.data.repository.ScheduleRepository
-import com.progress.habittracker.util.Resource
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+// Android Lifecycle komponensek
+import androidx.lifecycle.ViewModel // Az alap ViewModel osztály
+import androidx.lifecycle.ViewModelProvider // Factory interfész
+import androidx.lifecycle.viewModelScope // Coroutine scope a ViewModel-hez
+// Adatréteg (Data Layer) importok
+import com.progress.habittracker.data.local.TokenManager // Token kezelés
+import com.progress.habittracker.data.model.HabitResponseDto // Habit adatmodell
+import com.progress.habittracker.data.model.ProfileResponseDto // Profil adatmodell
+import com.progress.habittracker.data.repository.ProfileRepository // Profil repository
+import com.progress.habittracker.data.repository.ScheduleRepository // Schedule repository (statisztikákhoz)
+import com.progress.habittracker.util.Resource // Wrapper osztály az eredmények kezelésére (Success, Error, Loading)
+// Kotlin Coroutines és Flow
+import kotlinx.coroutines.flow.MutableStateFlow // Módosítható állapotfolyam
+import kotlinx.coroutines.flow.StateFlow // Csak olvasható állapotfolyam
+import kotlinx.coroutines.flow.asStateFlow // Konverzió StateFlow-ra
+import kotlinx.coroutines.flow.combine // Flow-k összefésülése
+import kotlinx.coroutines.flow.update // Állapot frissítése
+import kotlinx.coroutines.launch // Coroutine indítása
+// Dátumkezelés
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -23,13 +27,18 @@ import java.time.temporal.TemporalAdjusters
 /**
  * Profile ViewModel
  * 
- * Profil képernyő üzleti logikája
+ * Ez az osztály felelős a Profil képernyő (ProfileScreen) üzleti logikájáért és állapotkezeléséért.
  * 
- * Funkciók:
- * - Profil betöltése
- * - Habit-ek betöltése
- * - Heti statisztikák számítása
- * - Kijelentkezés
+ * Főbb feladatai:
+ * 1. A felhasználói profil adatainak lekérése a Repository-ból.
+ * 2. A felhasználó szokásainak (Habits) lekérése.
+ * 3. Statisztikák számítása a szokásokhoz (pl. heti teljesítés).
+ * 4. A UI állapot (ProfileUiState) karbantartása és frissítése.
+ * 5. Kijelentkezés kezelése.
+ * 
+ * @param profileRepository Adatforrás a profil adatokhoz.
+ * @param scheduleRepository Adatforrás a beosztásokhoz (statisztikákhoz kell).
+ * @param tokenManager A hitelesítési token törléséhez kijelentkezéskor.
  */
 class ProfileViewModel(
     private val profileRepository: ProfileRepository,
@@ -37,15 +46,28 @@ class ProfileViewModel(
     private val tokenManager: TokenManager
 ) : ViewModel() {
 
+    // A UI állapotát tároló MutableStateFlow. Csak a ViewModel módosíthatja.
     private val _uiState = MutableStateFlow(ProfileUiState())
+    // A UI számára publikus, csak olvasható StateFlow.
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
+    // Inicializáláskor azonnal betöltjük a profilt
     init {
         loadProfile()
     }
 
     /**
      * UI State data class
+     * 
+     * Ez az osztály írja le a képernyő teljes állapotát egy adott pillanatban.
+     * A Compose UI ez alapján rajzolja ki magát.
+     * 
+     * @param isLoading Töltődik-e a profil.
+     * @param profile A betöltött profil adatok.
+     * @param habits A felhasználó szokásainak listája.
+     * @param habitStats Statisztikák (Habit ID -> Teljesítési arány).
+     * @param isLoadingHabits Töltődnek-e a szokások.
+     * @param error Hibaüzenet, ha valami nem sikerült.
      */
     data class ProfileUiState(
         val isLoading: Boolean = false,
@@ -58,15 +80,21 @@ class ProfileViewModel(
 
     /**
      * Profil betöltése
+     * 
+     * Elindít egy coroutine-t, és lekéri a profil adatokat a repository-ból.
+     * Kezeli a Loading, Success és Error állapotokat.
      */
     fun loadProfile() {
         viewModelScope.launch {
+            // A repository Flow-t ad vissza, amire feliratkozunk (collect)
             profileRepository.getMyProfile().collect { resource ->
                 when (resource) {
                     is Resource.Loading -> {
+                        // Betöltés kezdete: isLoading = true
                         _uiState.update { it.copy(isLoading = true, error = null) }
                     }
                     is Resource.Success -> {
+                        // Sikeres betöltés: adatok mentése, isLoading = false
                         resource.data?.let { profile ->
                             _uiState.update {
                                 it.copy(
@@ -75,11 +103,12 @@ class ProfileViewModel(
                                     error = null
                                 )
                             }
-                            // Habit-ek betöltése és statisztikák indítása
+                            // Ha megvan a profil (és az ID), betöltjük a szokásokat és statisztikákat is
                             loadUserHabitsAndStats(profile.id)
                         }
                     }
                     is Resource.Error -> {
+                        // Hiba történt: hibaüzenet mentése, isLoading = false
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
@@ -94,7 +123,9 @@ class ProfileViewModel(
 
     /**
      * Felhasználó habit-jeinek és statisztikáinak betöltése
-     * Combine operátorral összefésülve
+     * 
+     * Ez a függvény párhuzamosan kéri le a szokásokat és a heti beosztást,
+     * majd összefésüli (combine) az eredményeket a statisztikák kiszámításához.
      */
     private fun loadUserHabitsAndStats(userId: Int) {
         viewModelScope.launch {
@@ -168,6 +199,9 @@ class ProfileViewModel(
 
     /**
      * Kijelentkezés
+     * 
+     * Törli a tárolt hitelesítési tokent és minden egyéb mentett adatot,
+     * így a következő indításkor a felhasználónak újra be kell jelentkeznie.
      */
     fun logout() {
         viewModelScope.launch {

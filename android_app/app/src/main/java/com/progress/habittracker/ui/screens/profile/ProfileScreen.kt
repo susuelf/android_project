@@ -1,74 +1,94 @@
 package com.progress.habittracker.ui.screens.profile
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.progress.habittracker.data.local.TokenManager
-import com.progress.habittracker.data.model.HabitResponseDto
-import com.progress.habittracker.data.repository.ProfileRepository
-import com.progress.habittracker.navigation.Screen
-import com.progress.habittracker.ui.theme.DarkSurface
+// Android és Compose alapkönyvtárak importálása a UI építéséhez
+import androidx.compose.foundation.layout.* // Layout elemek (Column, Row, Spacer, stb.)
+import androidx.compose.foundation.lazy.LazyColumn // Görgethető lista
+import androidx.compose.foundation.lazy.items // Lista elemek kezelése
+import androidx.compose.foundation.shape.CircleShape // Kör alakzat (pl. profilképhez)
+import androidx.compose.foundation.shape.RoundedCornerShape // Lekerekített sarkok
+import androidx.compose.material.icons.Icons // Ikonok gyűjteménye
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // Vissza nyíl ikon (tükrözhető)
+import androidx.compose.material.icons.automirrored.filled.Logout // Kijelentkezés ikon
+import androidx.compose.material.icons.filled.Add // Hozzáadás ikon
+import androidx.compose.material.icons.filled.Edit // Szerkesztés ikon
+import androidx.compose.material.icons.filled.Home // Kezdőlap ikon
+import androidx.compose.material.icons.filled.Person // Profil ikon
+import androidx.compose.material.icons.outlined.Home // Kezdőlap ikon (körvonalas)
+import androidx.compose.material.icons.outlined.Person // Profil ikon (körvonalas)
+import androidx.compose.material3.* // Material Design 3 komponensek
+import androidx.compose.runtime.* // Compose állapotkezelés (remember, mutableStateOf, stb.)
+import androidx.compose.ui.Alignment // Igazítások
+import androidx.compose.ui.Modifier // UI módosítók (padding, size, stb.)
+import androidx.compose.ui.draw.clip // Vágás (pl. kép kerekítése)
+import androidx.compose.ui.layout.ContentScale // Kép méretezése
+import androidx.compose.ui.platform.LocalContext // Android Context elérése
+import androidx.compose.ui.text.font.FontWeight // Betűvastagság
+import androidx.compose.ui.unit.dp // Mértékegység (density-independent pixel)
+import androidx.lifecycle.viewmodel.compose.viewModel // ViewModel integráció Compose-ba
+import androidx.navigation.NavController // Navigáció kezelése
+import coil.compose.AsyncImage // Kép betöltése URL-ből (Coil könyvtár)
+import coil.request.ImageRequest // Kép kérés konfigurálása
+// Saját osztályok importálása
+import com.progress.habittracker.data.local.TokenManager // Token kezelés (helyi adattárolás)
+import com.progress.habittracker.data.model.HabitResponseDto // Adatmodell a szokásokhoz
+import com.progress.habittracker.data.repository.ProfileRepository // Adatréteg a profilhoz
+import com.progress.habittracker.navigation.Screen // Navigációs útvonalak definíciója
+import com.progress.habittracker.ui.theme.DarkSurface // Téma színek
 import com.progress.habittracker.ui.theme.SuccessCyan
 import com.progress.habittracker.ui.theme.TextTertiary
-import com.progress.habittracker.ui.viewmodel.ProfileViewModel
-import com.progress.habittracker.ui.viewmodel.ProfileViewModelFactory
+import com.progress.habittracker.ui.viewmodel.ProfileViewModel // Nézetmodell a profil képernyőhöz
+import com.progress.habittracker.ui.viewmodel.ProfileViewModelFactory // Factory a ViewModel létrehozásához
 
 /**
  * Profile Screen
  *
- * Felhasználói profil megjelenítése
+ * Ez a képernyő felelős a felhasználói profil megjelenítéséért és kezeléséért.
  *
- * Funkciók:
- * - Profil adatok megjelenítése
- * - Habit-ek listázása
- * - Profil szerkesztése
- * - Kijelentkezés
+ * Főbb funkciók:
+ * 1. Felhasználói adatok (név, email, profilkép) megjelenítése.
+ * 2. A felhasználó szokásainak (habits) listázása.
+ * 3. Lehetőség új szokás hozzáadására.
+ * 4. Profil szerkesztésének kezdeményezése.
+ * 5. Kijelentkezés a fiókból.
+ * 6. Alsó navigációs sáv (Bottom Navigation) megjelenítése a főbb képernyők közötti váltáshoz.
  *
- * @param navController Navigációs kontroller
+ * Kapcsolatok:
+ * - ProfileViewModel: Az üzleti logika és az állapot kezelése.
+ * - ProfileRepository: Adatok lekérése a szerverről.
+ * - TokenManager: Hitelesítési token kezelése.
+ * - NavController: Navigáció más képernyőkre (pl. EditProfile, AddHabit, Login).
+ *
+ * @param navController A navigációt vezérlő objektum, amely lehetővé teszi a képernyők közötti váltást.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     navController: NavController
 ) {
+    // Context lekérése a függőségek (pl. TokenManager) inicializálásához
     val context = LocalContext.current
+    
+    // Függőségek manuális injektálása (DI keretrendszer hiányában)
+    // TokenManager: A bejelentkezési token tárolása és olvasása
     val tokenManager = remember { TokenManager(context) }
+    // Repository-k: Az adatréteg elérése
     val profileRepository = remember { ProfileRepository(tokenManager) }
     val scheduleRepository = remember { com.progress.habittracker.data.repository.ScheduleRepository(tokenManager) }
 
+    // ViewModel inicializálása a Factory segítségével
+    // A ViewModel felelős a UI állapotának tárolásáért és az üzleti logika végrehajtásáért
     val viewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(profileRepository, scheduleRepository, tokenManager)
     )
 
+    // A UI állapot figyelése (StateFlow -> State)
+    // Ha a viewModel.uiState változik, a UI automatikusan újrarajzolódik
     val uiState by viewModel.uiState.collectAsState()
 
+    // Helyi állapot a kijelentkezési megerősítő ablak megjelenítéséhez
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    // Kijelentkezés dialog
+    // Kijelentkezés megerősítő ablak (Dialog)
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -77,8 +97,10 @@ fun ProfileScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        // Kijelentkezés végrehajtása a ViewModel-en keresztül
                         viewModel.logout()
                         showLogoutDialog = false
+                        // Navigálás a bejelentkezési képernyőre, és a back stack törlése
                         navController.navigate(Screen.Login.route) {
                             popUpTo(Screen.Home.route) { inclusive = true }
                         }
@@ -95,18 +117,21 @@ fun ProfileScreen(
         )
     }
 
-    // Frissítés amikor visszajövünk Add Habit-ből vagy más képernyőről
+    // Életciklus esemény: Amikor a képernyő fókuszba kerül (pl. visszatéréskor), frissítjük az adatokat
     val navBackStackEntry = navController.currentBackStackEntry
     LaunchedEffect(navBackStackEntry) {
         // Ha visszatérünk, frissítjük a profilt és a habit-eket
         viewModel.loadProfile()
     }
 
+    // Scaffold: Az alapvető UI struktúra (TopBar, BottomBar, Content)
     Scaffold(
+        // Felső sáv (TopAppBar)
         topBar = {
             TopAppBar(
                 title = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.profile_title)) },
                 actions = {
+                    // Kijelentkezés gomb a jobb felső sarokban
                     IconButton(onClick = { showLogoutDialog = true }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Logout,
@@ -116,13 +141,13 @@ fun ProfileScreen(
                 }
             )
         },
+        // Alsó navigációs sáv (Bottom Navigation)
         bottomBar = {
-            // Bottom Navigation Bar
             NavigationBar(
                 containerColor = DarkSurface,
                 contentColor = MaterialTheme.colorScheme.onSurface
             ) {
-                // Home
+                // Home gomb
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -131,8 +156,9 @@ fun ProfileScreen(
                         )
                     },
                     label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.home_title)) },
-                    selected = false,
+                    selected = false, // Nem ez az aktív képernyő
                     onClick = {
+                        // Navigálás a Home képernyőre
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Home.route) { inclusive = true }
                         }
@@ -146,7 +172,7 @@ fun ProfileScreen(
                     )
                 )
 
-                // Profile
+                // Profile gomb (Aktív)
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -155,9 +181,9 @@ fun ProfileScreen(
                         )
                     },
                     label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.profile_title)) },
-                    selected = true,
+                    selected = true, // Ez az aktív képernyő
                     onClick = {
-                        // Már a Profile screen-en vagyunk
+                        // Már a Profile screen-en vagyunk, nem történik semmi
                     },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = SuccessCyan,
@@ -170,18 +196,22 @@ fun ProfileScreen(
             }
         }
     ) { paddingValues ->
+        // A tartalom konténere, figyelembe véve a Scaffold padding-jét
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // UI állapotok kezelése (Betöltés, Hiba, Tartalom)
             when {
                 uiState.isLoading -> {
+                    // Betöltés jelző (Spinner)
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
                 uiState.error != null -> {
+                    // Hibaüzenet és Újrapróbálkozás gomb
                     Column(
                         modifier = Modifier
                             .align(Alignment.Center)
@@ -200,6 +230,7 @@ fun ProfileScreen(
                     }
                 }
                 uiState.profile != null -> {
+                    // Sikeres betöltés esetén a profil tartalom megjelenítése
                     ProfileContent(
                         profile = uiState.profile!!,
                         habits = uiState.habits,
@@ -216,6 +247,16 @@ fun ProfileScreen(
 
 /**
  * Profil tartalom megjelenítése
+ *
+ * Ez a komponens felelős a profil adatok és a szokások listájának elrendezéséért.
+ * LazyColumn-t használ a görgethető tartalomhoz.
+ *
+ * @param profile A felhasználó profil adatai
+ * @param habits A felhasználó szokásainak listája
+ * @param habitStats Statisztikák a szokásokhoz (pl. teljesítési arány)
+ * @param isLoadingHabits Töltődik-e éppen a szokások listája
+ * @param onEditProfile Callback a profil szerkesztéséhez
+ * @param onAddHabit Callback új szokás hozzáadásához
  */
 @Composable
 private fun ProfileContent(
@@ -231,7 +272,7 @@ private fun ProfileContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Profil kép és alapadatok
+        // 1. Szekció: Profil fejléc (Kép, Név, Email, Leírás, Szerkesztés gomb)
         item {
             Card(
                 modifier = Modifier.fillMaxWidth()
@@ -242,7 +283,7 @@ private fun ProfileContent(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Profil kép
+                    // Profil kép megjelenítése
                     Surface(
                         modifier = Modifier.size(140.dp),
                         shape = CircleShape,
@@ -250,6 +291,7 @@ private fun ProfileContent(
                         border = androidx.compose.foundation.BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
                     ) {
                         if (!profile.profileImageUrl.isNullOrBlank()) {
+                            // Kép betöltése URL-ből aszinkron módon
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data(profile.profileImageUrl)
@@ -262,6 +304,7 @@ private fun ProfileContent(
                                 contentScale = ContentScale.Crop
                             )
                         } else {
+                            // Alapértelmezett ikon, ha nincs profilkép
                             Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
@@ -278,21 +321,21 @@ private fun ProfileContent(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Username
+                    // Felhasználónév
                     Text(
                         text = profile.username,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Email
+                    // Email cím
                     Text(
                         text = profile.email,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // Description
+                    // Bemutatkozás (ha van)
                     if (!profile.description.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -303,7 +346,7 @@ private fun ProfileContent(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Szerkesztés gomb
+                    // Profil szerkesztése gomb
                     Button(
                         onClick = onEditProfile,
                         modifier = Modifier.fillMaxWidth()
@@ -320,7 +363,7 @@ private fun ProfileContent(
             }
         }
 
-        // Habit-ek szekció
+        // 2. Szekció: Szokások (Habits) listája
         item {
             Text(
                 text = "${androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.my_habits)} (${habits.size})",
@@ -330,6 +373,7 @@ private fun ProfileContent(
         }
 
         if (isLoadingHabits) {
+            // Betöltés jelző a szokásokhoz
             item {
                 Box(
                     modifier = Modifier
@@ -341,6 +385,7 @@ private fun ProfileContent(
                 }
             }
         } else if (habits.isEmpty()) {
+            // Üres állapot, ha nincsenek szokások
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth()
@@ -354,6 +399,7 @@ private fun ProfileContent(
                 }
             }
         } else {
+            // Szokások listázása
             items(habits) { habit ->
                 HabitItem(
                     habit = habit,
@@ -362,7 +408,7 @@ private fun ProfileContent(
             }
         }
 
-        // Create New Habit Button
+        // 3. Szekció: Új szokás hozzáadása gomb
         item {
             Button(
                 onClick = onAddHabit,
@@ -381,7 +427,7 @@ private fun ProfileContent(
 }
 
 /**
- * Habit item megjelenítése
+ * Egy szokás (Habit) kártya megjelenítése a listában
  */
 @Composable
 private fun HabitItem(
@@ -396,6 +442,7 @@ private fun HabitItem(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // Cím és Kategória
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -407,7 +454,7 @@ private fun HabitItem(
                     fontWeight = FontWeight.Bold
                 )
                 
-                // Kategória chip
+                // Kategória címke (Chip)
                 AssistChip(
                     onClick = { },
                     label = { Text(habit.category.name) },
@@ -415,6 +462,7 @@ private fun HabitItem(
                 )
             }
 
+            // Leírás
             if (!habit.description.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -424,6 +472,7 @@ private fun HabitItem(
                 )
             }
 
+            // Cél (Goal)
             if (!habit.goal.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -435,7 +484,7 @@ private fun HabitItem(
 
             Spacer(modifier = Modifier.height(12.dp))
             
-            // Consistency Progress Bar
+            // Napi haladás (Progress) - Itt jeleníthető meg a statisztika
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

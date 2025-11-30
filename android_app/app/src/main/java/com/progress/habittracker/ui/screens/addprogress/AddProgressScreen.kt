@@ -1,79 +1,80 @@
 package com.progress.habittracker.ui.screens.addprogress
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import com.progress.habittracker.data.local.TokenManager
-import com.progress.habittracker.data.repository.ProgressRepository
-import com.progress.habittracker.data.repository.ScheduleRepository
-import com.progress.habittracker.ui.theme.DarkBackground
+// Android és Compose alapkönyvtárak
+import androidx.compose.foundation.background // Háttérszín
+import androidx.compose.foundation.layout.* // Layout elemek
+import androidx.compose.foundation.rememberScrollState // Görgetés állapota
+import androidx.compose.foundation.shape.RoundedCornerShape // Lekerekített sarkok
+import androidx.compose.foundation.text.KeyboardOptions // Billentyűzet beállítások
+import androidx.compose.foundation.verticalScroll // Függőleges görgetés
+import androidx.compose.material.icons.Icons // Ikonok
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // Vissza nyíl
+import androidx.compose.material3.* // Material Design 3
+import androidx.compose.runtime.* // Állapotkezelés
+import androidx.compose.ui.Alignment // Igazítás
+import androidx.compose.ui.Modifier // UI módosítók
+import androidx.compose.ui.graphics.Color // Színek
+import androidx.compose.ui.text.font.FontWeight // Betűvastagság
+import androidx.compose.ui.text.input.KeyboardType // Billentyűzet típusa (pl. szám)
+import androidx.compose.ui.unit.dp // Mértékegység
+import androidx.compose.ui.unit.sp // Betűméret
+import androidx.lifecycle.viewmodel.compose.viewModel // ViewModel integráció
+import androidx.navigation.NavController // Navigáció
+// Saját osztályok
+import com.progress.habittracker.data.local.TokenManager // Token kezelés
+import com.progress.habittracker.data.repository.ProgressRepository // Progress adatréteg
+import com.progress.habittracker.data.repository.ScheduleRepository // Schedule adatréteg
+import com.progress.habittracker.ui.theme.DarkBackground // Téma színek
 import com.progress.habittracker.ui.theme.DarkSurface
 import com.progress.habittracker.ui.theme.PrimaryPurple
 import com.progress.habittracker.ui.theme.SuccessCyan
 import com.progress.habittracker.ui.theme.TextPrimary
 import com.progress.habittracker.ui.theme.TextSecondary
 import com.progress.habittracker.ui.theme.TextTertiary
-import com.progress.habittracker.ui.viewmodel.AddProgressViewModel
-import com.progress.habittracker.ui.viewmodel.AddProgressViewModelFactory
-import java.time.format.DateTimeFormatter
+import com.progress.habittracker.ui.viewmodel.AddProgressViewModel // ViewModel
+import com.progress.habittracker.ui.viewmodel.AddProgressViewModelFactory // ViewModel Factory
+import java.time.format.DateTimeFormatter // Dátum formázás
 
 /**
- * Add Progress Screen - Dark Theme
+ * Add Progress Screen - Haladás rögzítése
  * 
- * Update your progress for a schedule
+ * Ez a képernyő lehetővé teszi a felhasználó számára, hogy rögzítse, mennyi időt töltött
+ * egy adott tevékenységgel (Schedule).
  * 
- * Funkciók (spec szerint):
- * - Log time spent on activity (kötelező)
- * - Add optional notes
- * - Counts towards the completion of a schedule based on time
- * - Progress = completed work (isCompleted mindig true)
+ * Funkciók:
+ * 1. Eltöltött idő (Logged Time) megadása percben (Kötelező).
+ * 2. Megjegyzés (Notes) hozzáadása (Opcionális).
+ * 3. Validáció: Nem lehet többet rögzíteni, mint a tervezett időtartam.
+ * 4. Mentés: Elküldi az adatokat a szervernek (POST /progress).
  * 
- * Backend: POST /progress
- * Required: scheduleId, date, logged_time
- * Optional: notes
- * Fixed: is_completed = true
- * 
- * @param navController Navigációs kontroller
- * @param scheduleId Schedule azonosító
+ * @param navController Navigációs vezérlő.
+ * @param scheduleId Annak a beosztásnak (Schedule) az azonosítója, amihez a haladást rögzítjük.
  */
-@Suppress("NewApi") // Java Time API is available via desugaring
+@Suppress("NewApi") // Java Time API használata (desugaring támogatással)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProgressScreen(
     navController: NavController,
     scheduleId: Int
 ) {
+    // Függőségek inicializálása
     val context = androidx.compose.ui.platform.LocalContext.current
     val tokenManager = remember { TokenManager(context) }
     val scheduleRepository = remember { ScheduleRepository(tokenManager) }
     val progressRepository = remember { ProgressRepository(tokenManager) }
     
+    // ViewModel létrehozása a Factory segítségével, átadva a scheduleId-t
     val viewModel: AddProgressViewModel = viewModel(
         factory = AddProgressViewModelFactory(scheduleId, scheduleRepository, progressRepository)
     )
     
+    // UI állapot figyelése
     val uiState by viewModel.uiState.collectAsState()
     
-    // Snackbar host
+    // Snackbar állapot a visszajelzésekhez
     val snackbarHostState = remember { SnackbarHostState() }
     
-    // Error handling
+    // Hibaüzenetek kezelése
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             snackbarHostState.showSnackbar(
@@ -84,13 +85,14 @@ fun AddProgressScreen(
         }
     }
     
-    // Success navigation
+    // Sikeres mentés esetén visszalépés
     LaunchedEffect(uiState.createSuccess) {
         if (uiState.createSuccess) {
             navController.popBackStack()
         }
     }
     
+    // Scaffold: UI keret
     Scaffold(
         topBar = {
             TopAppBar(
@@ -112,16 +114,17 @@ fun AddProgressScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = DarkBackground
     ) { paddingValues ->
+        // Tartalom
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(DarkBackground)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()) // Görgethető tartalom
                 .padding(horizontal = 24.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Info header
+            // Fejléc szövegek
             Text(
                 text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.update_progress_header),
                 style = MaterialTheme.typography.headlineSmall,
@@ -140,7 +143,8 @@ fun AddProgressScreen(
             
             Spacer(modifier = Modifier.height(8.dp))
             
-            // Logged Time (kötelező) - max a hátralévő idő
+            // 1. Kártya: Eltöltött idő megadása
+            // A maxDuration korlátozza a beírható értéket
             val maxDuration = uiState.maxAllowedTime
             LoggedTimeCard(
                 loggedTime = uiState.loggedTime,
@@ -148,7 +152,7 @@ fun AddProgressScreen(
                 onLoggedTimeChange = { viewModel.setLoggedTime(it) }
             )
             
-            // Notes (opcionális)
+            // 2. Kártya: Megjegyzések (Opcionális)
             NotesCard(
                 notes = uiState.notes,
                 onNotesChange = { viewModel.setNotes(it) }
@@ -156,11 +160,11 @@ fun AddProgressScreen(
             
             Spacer(modifier = Modifier.height(8.dp))
             
-            // Save button
+            // Mentés gomb
             Button(
                 onClick = { viewModel.createProgress() },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !uiState.isCreating,
+                enabled = !uiState.isCreating, // Letiltva mentés közben
                 colors = ButtonDefaults.buttonColors(
                     containerColor = SuccessCyan,
                     contentColor = DarkBackground
@@ -183,15 +187,18 @@ fun AddProgressScreen(
                 }
             }
             
-            // Extra padding
+            // Extra térköz az alján
             Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
 
 /**
- * Logged Time Card - Dark Theme
- * Time spent in minutes (required, max = schedule duration)
+ * Logged Time Card - Eltöltött idő beviteli kártya
+ * 
+ * @param loggedTime Jelenleg beírt érték (szövegként).
+ * @param maxDuration Maximálisan beírható idő (percben).
+ * @param onLoggedTimeChange Callback változáskor.
  */
 @Composable
 private fun LoggedTimeCard(
@@ -199,6 +206,7 @@ private fun LoggedTimeCard(
     maxDuration: Int,
     onLoggedTimeChange: (String) -> Unit
 ) {
+    // Validáció: Szám-e, üres-e, pozitív-e, nem haladja-e meg a maximumot
     val timeValue = loggedTime.toIntOrNull()
     val isError = loggedTime.isEmpty() || timeValue == null || timeValue <= 0 || timeValue > maxDuration
     
@@ -224,6 +232,7 @@ private fun LoggedTimeCard(
             OutlinedTextField(
                 value = loggedTime,
                 onValueChange = { newValue ->
+                    // Csak számokat engedünk beírni
                     if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
                         onLoggedTimeChange(newValue)
                     }
@@ -231,10 +240,11 @@ private fun LoggedTimeCard(
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.minutes_required_label), color = TextTertiary) },
                 placeholder = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.minutes_placeholder), color = TextTertiary.copy(alpha = 0.5f)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), // Számbillentyűzet
                 singleLine = true,
                 isError = isError,
                 supportingText = {
+                    // Hibaüzenetek vagy segédszöveg megjelenítése
                     when {
                         loggedTime.isEmpty() ->
                             Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.time_spent_required_error), color = MaterialTheme.colorScheme.error)
@@ -264,15 +274,19 @@ private fun LoggedTimeCard(
 }
 
 /**
- * Notes Card - Dark Theme
- * Optional notes for the progress update
+ * Notes Card - Megjegyzés kártya
+ * 
+ * Opcionális szöveges mező a haladáshoz fűzött megjegyzéseknek.
+ * 
+ * @param notes A jelenlegi megjegyzés szövege.
+ * @param onNotesChange Callback változáskor.
  */
 @Composable
 private fun NotesCard(
     notes: String,
     onNotesChange: (String) -> Unit
 ) {
-    val maxLength = 500
+    val maxLength = 500 // Maximális karakterszám
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -285,6 +299,7 @@ private fun NotesCard(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Fejléc és karakterszámláló
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -310,6 +325,7 @@ private fun NotesCard(
                 )
             }
             
+            // Szövegmező
             OutlinedTextField(
                 value = notes,
                 onValueChange = { newValue ->

@@ -38,40 +38,45 @@ import com.progress.habittracker.ui.viewmodel.EditScheduleViewModelFactory
 import java.time.format.DateTimeFormatter
 
 /**
- * Edit Schedule Screen - Dark Theme
- * 
- * Schedule szerkesztése dark theme-el
- * 
- * Funkciók (spec szerint):
- * - Start Time és End Time módosítása
- * - Duration (időtartam) módosítása
- * - Status beállítása: Planned, Completed, Skipped
- * - Participants/Partners hozzáadása és eltávolítása
- * - Notes szerkesztése
- * - Mentés (PATCH /schedule/{id})
- * 
- * @param navController Navigációs kontroller
- * @param scheduleId Schedule azonosító
+ * Edit Schedule Screen - Időbeosztás szerkesztése
+ *
+ * Ez a képernyő teszi lehetővé egy meglévő időbeosztás (schedule) részleteinek módosítását.
+ *
+ * Főbb funkciók:
+ * - Kezdési időpont (Start Time) módosítása.
+ * - Tervezett időtartam (Duration) módosítása.
+ * - Státusz beállítása (Tervezett, Befejezett, Kihagyott).
+ * - Megjegyzések (Notes) szerkesztése.
+ * - Résztvevők/Partnerek kezelése (eltávolítás).
+ * - Változtatások mentése a szerverre.
+ *
+ * @param navController A navigációért felelős vezérlő.
+ * @param scheduleId A szerkesztendő időbeosztás azonosítója.
  */
-@Suppress("NewApi") // Java Time API is available via desugaring
+@Suppress("NewApi") // Java Time API használata miatt (desugaring támogatott)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditScheduleScreen(
     navController: NavController,
     scheduleId: Int
 ) {
+    // Kontextus és függőségek inicializálása
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
     val scheduleRepository = remember { ScheduleRepository(tokenManager) }
     
+    // ViewModel létrehozása a Factory segítségével, átadva a scheduleId-t
     val viewModel: EditScheduleViewModel = viewModel(
         factory = EditScheduleViewModelFactory(scheduleId, scheduleRepository)
     )
     
+    // UI állapot figyelése a ViewModel-ből
     val uiState by viewModel.uiState.collectAsState()
+    
+    // Snackbar állapot a hibaüzenetek megjelenítéséhez
     val snackbarHostState = remember { SnackbarHostState() }
     
-    // Error handling
+    // Hibaüzenetek kezelése
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             snackbarHostState.showSnackbar(
@@ -82,13 +87,14 @@ fun EditScheduleScreen(
         }
     }
     
-    // Success navigation
+    // Sikeres frissítés esetén visszanavigálás
     LaunchedEffect(uiState.updateSuccess) {
         if (uiState.updateSuccess) {
             navController.popBackStack()
         }
     }
     
+    // Scaffold: Az alapvető képernyőszerkezet
     Scaffold(
         topBar = {
             TopAppBar(
@@ -111,6 +117,7 @@ fun EditScheduleScreen(
         containerColor = DarkBackground
     ) { paddingValues ->
         
+        // Töltésjelző megjelenítése, ha az adatok még töltődnek
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier
@@ -122,16 +129,17 @@ fun EditScheduleScreen(
                 CircularProgressIndicator(color = PrimaryPurple)
             }
         } else {
+            // Tartalom megjelenítése
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
                     .background(DarkBackground)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(rememberScrollState()) // Görgethető tartalom
                     .padding(horizontal = 24.dp, vertical = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Habit info (read-only)
+                // 1. Szokás információk (csak olvasható)
                 uiState.schedule?.let { schedule ->
                     HabitInfoCard(
                         habitName = schedule.habit.name,
@@ -139,32 +147,32 @@ fun EditScheduleScreen(
                     )
                 }
                 
-                // Időpont kártya (Start & End Time)
+                // 2. Időpont kártya (Kezdés és Befejezés)
                 TimeCard(
                     startTime = uiState.startTime,
                     endTime = uiState.endTime,
                     onStartTimeChange = { viewModel.setStartTime(it) }
                 )
                 
-                // Időtartam (Duration)
+                // 3. Időtartam kártya
                 DurationCard(
                     duration = uiState.durationMinutes,
                     onDurationChange = { viewModel.setDuration(it) }
                 )
                 
-                // Státusz (Status: Planned/Completed/Skipped)
+                // 4. Státusz kártya (Tervezett/Befejezett/Kihagyott)
                 StatusCard(
                     status = uiState.status,
                     onStatusChange = { viewModel.setStatus(it) }
                 )
                 
-                // Jegyzetek (Notes)
+                // 5. Jegyzetek kártya
                 NotesCard(
                     notes = uiState.notes,
                     onNotesChange = { viewModel.setNotes(it) }
                 )
                 
-                // Résztvevők/Partnerek (Participants/Partners)
+                // 6. Résztvevők/Partnerek kártya
                 uiState.schedule?.let { schedule ->
                     ParticipantsCard(
                         participants = schedule.participants ?: emptyList(),
@@ -174,11 +182,11 @@ fun EditScheduleScreen(
                     )
                 }
                 
-                // Mentés gomb
+                // 7. Mentés gomb
                 Button(
                     onClick = { viewModel.updateSchedule() },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isUpdating,
+                    enabled = !uiState.isUpdating, // Letiltva mentés közben
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PrimaryPurple,
                         contentColor = Color.White
@@ -196,7 +204,7 @@ fun EditScheduleScreen(
                     }
                 }
                 
-                // Extra padding
+                // Extra térköz az alján
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
@@ -204,7 +212,7 @@ fun EditScheduleScreen(
 }
 
 /**
- * Habit info kártya (read-only) - Dark Theme
+ * Szokás információit megjelenítő kártya (csak olvasható).
  */
 @Composable
 private fun HabitInfoCard(
@@ -240,8 +248,8 @@ private fun HabitInfoCard(
 }
 
 /**
- * Időpont kártya - Dark Theme
- * Start Time szerkeszthető, End Time automatikusan számolódik (duration alapján)
+ * Időpontok beállítására szolgáló kártya.
+ * A kezdési idő szerkeszthető, a befejezési idő automatikusan számolódik az időtartam alapján.
  */
 @Composable
 private fun TimeCard(
@@ -270,7 +278,7 @@ private fun TimeCard(
                 fontSize = 18.sp
             )
             
-            // Start Time (szerkeszthető)
+            // Kezdési idő (szerkeszthető TimePickerDialog-gal)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.start_time),
@@ -287,7 +295,7 @@ private fun TimeCard(
                             },
                             startTime.hour,
                             startTime.minute,
-                            true
+                            true // 24 órás formátum
                         ).show()
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -316,7 +324,7 @@ private fun TimeCard(
                 }
             }
             
-            // End Time (read-only, automatikusan számolódik)
+            // Befejezési idő (csak olvasható, automatikusan számolódik)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -373,8 +381,8 @@ private fun TimeCard(
 }
 
 /**
- * Időtartam kártya - Dark Theme
- * Duration in minutes (max 480 perc = 8 óra)
+ * Időtartam beállítására szolgáló kártya.
+ * Percben adható meg, maximum 480 perc (8 óra).
  */
 @Composable
 private fun DurationCard(
@@ -408,6 +416,7 @@ private fun DurationCard(
             OutlinedTextField(
                 value = durationText,
                 onValueChange = { newValue ->
+                    // Csak számokat engedünk beírni
                     if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
                         durationText = newValue
                         newValue.toIntOrNull()?.let { value ->
@@ -423,6 +432,7 @@ private fun DurationCard(
                 singleLine = true,
                 isError = isError,
                 supportingText = {
+                    // Hibaüzenetek vagy segédszöveg megjelenítése
                     when {
                         durationValue == null || durationValue <= 0 -> 
                             Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.duration_error_invalid), color = MaterialTheme.colorScheme.error)
@@ -450,8 +460,8 @@ private fun DurationCard(
 }
 
 /**
- * Státusz kártya - Dark Theme
- * Status: Planned, Completed, Skipped (spec szerint)
+ * Státusz beállítására szolgáló kártya.
+ * Lehetséges értékek: Tervezett (Planned), Befejezett (Completed), Kihagyott (Skipped).
  */
 @Composable
 private fun StatusCard(
@@ -477,10 +487,12 @@ private fun StatusCard(
                 fontSize = 18.sp
             )
             
+            // FilterChip-ek a státusz kiválasztásához
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Planned Chip
                 FilterChip(
                     selected = status == ScheduleStatus.Planned,
                     onClick = { onStatusChange(ScheduleStatus.Planned) },
@@ -507,6 +519,7 @@ private fun StatusCard(
                     )
                 )
                 
+                // Completed Chip
                 FilterChip(
                     selected = status == ScheduleStatus.Completed,
                     onClick = { onStatusChange(ScheduleStatus.Completed) },
@@ -533,6 +546,7 @@ private fun StatusCard(
                     )
                 )
                 
+                // Skipped Chip
                 FilterChip(
                     selected = status == ScheduleStatus.Skipped,
                     onClick = { onStatusChange(ScheduleStatus.Skipped) },
@@ -564,8 +578,7 @@ private fun StatusCard(
 }
 
 /**
- * Jegyzetek kártya - Dark Theme
- * Notes editing (spec szerint)
+ * Megjegyzések szerkesztésére szolgáló kártya.
  */
 @Composable
 private fun NotesCard(
@@ -638,8 +651,8 @@ private fun NotesCard(
 }
 
 /**
- * Résztvevők/Partnerek kártya - Dark Theme
- * Participants/Partners management (spec szerint)
+ * Résztvevők/Partnerek kezelésére szolgáló kártya.
+ * Listázza a résztvevőket és lehetőséget ad az eltávolításukra.
  */
 @Composable
 private fun ParticipantsCard(
@@ -690,7 +703,7 @@ private fun ParticipantsCard(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                // Avatar
+                                // Avatar (Kezdőbetű)
                                 Box(
                                     modifier = Modifier
                                         .size(36.dp)
@@ -725,6 +738,7 @@ private fun ParticipantsCard(
                                 }
                             }
                             
+                            // Törlés gomb
                             IconButton(
                                 onClick = { onRemoveParticipant(participant.id) }
                             ) {
@@ -740,7 +754,7 @@ private fun ParticipantsCard(
                 }
             }
             
-            // Note: Add partner functionality jelenleg nincs implementálva a backend-ben
+            // Megjegyzés: Új partner hozzáadása jelenleg nem támogatott ezen a felületen
             Text(
                 text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.partners_note),
                 style = MaterialTheme.typography.bodySmall,

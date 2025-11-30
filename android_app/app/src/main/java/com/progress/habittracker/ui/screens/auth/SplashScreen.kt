@@ -25,18 +25,20 @@ import com.progress.habittracker.ui.viewmodel.AuthViewModelFactory
 import kotlinx.coroutines.delay
 
 /**
- * SplashScreen - Splash (induló) képernyő
- * 
- * Ez a képernyő jelenik meg az alkalmazás indításakor.
- * 
- * Funkciók:
- * - Megjeleníti az alkalmazás logóját és nevét
- * - Automatikus login ellenőrzést végez (TokenManager alapján)
- * - Ha van érvényes token -> Home Screen
- * - Ha nincs érvényes token -> Login Screen
- * 
- * @param navController Navigációs controller
- * @param viewModel Auth ViewModel az auto-login ellenőrzéshez
+ * SplashScreen - Induló képernyő
+ *
+ * Ez a képernyő jelenik meg először az alkalmazás indításakor.
+ * Célja, hogy betöltse a szükséges adatokat és eldöntse, hova kell navigálni a felhasználót.
+ *
+ * Főbb funkciók:
+ * - Megjeleníti az alkalmazás logóját és nevét (Branding).
+ * - Automatikus bejelentkezés ellenőrzése: Megvizsgálja, hogy van-e érvényes token elmentve.
+ * - Navigáció:
+ *   - Ha van érvényes token -> Home Screen (Főképernyő).
+ *   - Ha nincs érvényes token -> Login Screen (Bejelentkezés).
+ *
+ * @param navController A navigációért felelős vezérlő.
+ * @param viewModel Az autentikációs logikát kezelő ViewModel, amely ellenőrzi a bejelentkezési státuszt.
  */
 @Composable
 fun SplashScreen(
@@ -45,49 +47,50 @@ fun SplashScreen(
         factory = AuthViewModelFactory(LocalContext.current)
     )
 ) {
-    // LaunchedEffect: Lefut amikor a composable betöltődik
+    // LaunchedEffect: Ez a blokk akkor fut le, amikor a Composable először megjelenik a képernyőn.
+    // A 'Unit' paraméter miatt csak egyszer fut le.
     LaunchedEffect(Unit) {
-        // Kis késleltetés, hogy látható legyen a splash screen (1.5 másodperc)
+        // Kis késleltetés (1.5 másodperc), hogy a felhasználó láthassa a logót és az animációt.
+        // Ez ad egy "betöltés" érzetet és nem villan át azonnal a következő képernyőre.
         delay(1500)
         
-        // Auto-login ellenőrzés
+        // Auto-login ellenőrzés a ViewModel segítségével.
+        // A checkAutoLogin metódus megnézi a TokenManager-ben tárolt tokent.
         viewModel.checkAutoLogin { isLoggedIn ->
             if (isLoggedIn) {
-                // Van érvényes token -> Home Screen
+                // Ha van érvényes token (be van jelentkezve) -> Navigálás a Home Screen-re
                 navController.navigate(Screen.Home.route) {
-                    // Töröljük a Splash-t a back stack-ből
+                    // Töröljük a Splash Screen-t a vissza-gomb történetéből (back stack),
+                    // hogy a felhasználó ne tudjon visszalépni a töltőképernyőre.
                     popUpTo(Screen.Splash.route) { inclusive = true }
                 }
             } else {
-                // Nincs érvényes token -> Login Screen
+                // Ha nincs érvényes token (nincs bejelentkezve) -> Navigálás a Login Screen-re
                 navController.navigate(Screen.Login.route) {
-                    // Töröljük a Splash-t a back stack-ből
+                    // Itt is töröljük a Splash Screen-t a back stack-ből.
                     popUpTo(Screen.Splash.route) { inclusive = true }
                 }
             }
         }
     }
     
-    // UI
+    // UI felépítése: Egy teljes képernyős felület az elsődleges színnel
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.primary
     ) {
+        // Oszlop elrendezés a tartalom középre igazításához
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.CenterHorizontally, // Vízszintesen középre
+            verticalArrangement = Arrangement.Center // Függőlegesen középre
         ) {
-            // TODO: App logo helyett placeholder
-            // Image(
-            //     painter = painterResource(id = R.drawable.app_logo),
-            //     contentDescription = "Progr3SS Logo",
-            //     modifier = Modifier.size(120.dp)
-            // )
+            // TODO: Később ide kerülhet egy tényleges kép/logó (Image composable)
+            // Jelenleg csak a szöveges logó jelenik meg.
             
-            // App név
+            // Alkalmazás neve
             Text(
                 text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.app_name),
                 style = MaterialTheme.typography.displayLarge,
@@ -97,7 +100,7 @@ fun SplashScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Alcím
+            // Alcím / Szlogen
             Text(
                 text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.app_subtitle),
                 style = MaterialTheme.typography.titleMedium,
@@ -106,7 +109,8 @@ fun SplashScreen(
             
             Spacer(modifier = Modifier.height(48.dp))
             
-            // Loading indicator
+            // Töltésjelző (CircularProgressIndicator)
+            // Jelzi a felhasználónak, hogy a háttérben folyamatok zajlanak (pl. token ellenőrzés).
             CircularProgressIndicator(
                 color = MaterialTheme.colorScheme.onPrimary
             )
@@ -115,7 +119,7 @@ fun SplashScreen(
 }
 
 /**
- * Preview a Splash Screen-hez
+ * Előnézet a Splash Screen-hez.
  */
 @Preview(showBackground = true)
 @Composable

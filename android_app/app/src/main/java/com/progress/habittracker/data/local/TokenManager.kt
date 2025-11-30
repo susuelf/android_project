@@ -11,36 +11,44 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
- * TokenManager - Token és felhasználói adatok kezelése
+ * TokenManager - Helyi adattárolás kezelése (DataStore)
  * 
- * Ez az osztály felelős a token-ek biztonságos tárolásáért és kezeléséért
- * DataStore Preferences használatával.
+ * Ez az osztály felelős a hitelesítési tokenek (Access, Refresh) és az alapvető
+ * felhasználói adatok (ID, név, email) biztonságos és perzisztens tárolásáért.
  * 
- * @param context Alkalmazás kontextus
+ * Technológiák:
+ * - Jetpack DataStore Preferences: A SharedPreferences modern, aszinkron utódja.
+ * - Kotlin Coroutines & Flow: Az adatok aszinkron írása és olvasása.
+ * 
+ * @param context Az alkalmazás kontextusa, szükséges a DataStore eléréséhez.
  */
 class TokenManager(private val context: Context) {
     
     companion object {
-        // DataStore neve
+        // A DataStore fájl neve
         private const val DATASTORE_NAME = "auth_prefs"
         
-        // DataStore extension property létrehozása
+        // DataStore példány létrehozása (Singleton minta a Context kiterjesztésével)
+        // Ez biztosítja, hogy csak egy DataStore példány létezzen az alkalmazásban.
         private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
             name = DATASTORE_NAME
         )
         
-        // Preferences kulcsok
-        private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
-        private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token")
-        private val USER_ID_KEY = intPreferencesKey("user_id")
-        private val USER_EMAIL_KEY = stringPreferencesKey("user_email")
-        private val USER_NAME_KEY = stringPreferencesKey("user_name")
+        // Kulcsok definíciója az adatok tárolásához
+        private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token") // JWT Access Token
+        private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token") // JWT Refresh Token
+        private val USER_ID_KEY = intPreferencesKey("user_id") // Felhasználó egyedi azonosítója
+        private val USER_EMAIL_KEY = stringPreferencesKey("user_email") // Felhasználó email címe
+        private val USER_NAME_KEY = stringPreferencesKey("user_name") // Felhasználónév
     }
     
     /**
      * Access token lekérése Flow-ként
      * 
-     * @return Flow<String?> access token vagy null
+     * Folyamatosan figyeli a DataStore változásait. Ha a token frissül,
+     * a Flow új értéket bocsát ki.
+     * 
+     * @return Flow<String?> A token értéke, vagy null ha nincs mentve.
      */
     val accessToken: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[ACCESS_TOKEN_KEY]
@@ -49,7 +57,7 @@ class TokenManager(private val context: Context) {
     /**
      * Refresh token lekérése Flow-ként
      * 
-     * @return Flow<String?> refresh token vagy null
+     * @return Flow<String?> A refresh token értéke, vagy null.
      */
     val refreshToken: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[REFRESH_TOKEN_KEY]
@@ -58,7 +66,7 @@ class TokenManager(private val context: Context) {
     /**
      * Felhasználó ID lekérése Flow-ként
      * 
-     * @return Flow<Int?> user ID vagy null
+     * @return Flow<Int?> A felhasználó ID-ja, vagy null.
      */
     val userId: Flow<Int?> = context.dataStore.data.map { preferences ->
         preferences[USER_ID_KEY]
@@ -67,7 +75,7 @@ class TokenManager(private val context: Context) {
     /**
      * Felhasználó email lekérése Flow-ként
      * 
-     * @return Flow<String?> email vagy null
+     * @return Flow<String?> Az email cím, vagy null.
      */
     val userEmail: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[USER_EMAIL_KEY]
@@ -76,7 +84,7 @@ class TokenManager(private val context: Context) {
     /**
      * Felhasználó név lekérése Flow-ként
      * 
-     * @return Flow<String?> username vagy null
+     * @return Flow<String?> A felhasználónév, vagy null.
      */
     val userName: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[USER_NAME_KEY]
@@ -85,13 +93,14 @@ class TokenManager(private val context: Context) {
     /**
      * Token-ek és felhasználói adatok mentése
      * 
-     * Sikeres login/register után hívjuk meg
+     * Ezt a függvényt hívjuk meg sikeres bejelentkezés vagy regisztráció után.
+     * Aszinkron művelet (suspend).
      * 
-     * @param accessToken Access token
-     * @param refreshToken Refresh token
-     * @param userId Felhasználó ID
-     * @param userEmail Felhasználó email
-     * @param userName Felhasználó név
+     * @param accessToken A kapott JWT access token.
+     * @param refreshToken A kapott JWT refresh token.
+     * @param userId A felhasználó azonosítója.
+     * @param userEmail A felhasználó email címe.
+     * @param userName A felhasználó neve.
      */
     suspend fun saveTokens(
         accessToken: String,
@@ -112,10 +121,11 @@ class TokenManager(private val context: Context) {
     /**
      * Access token frissítése
      * 
-     * Token refresh után hívjuk meg
+     * Akkor hívjuk meg, ha a token lejárt, és a refresh token segítségével
+     * újat kértünk a szervertől.
      * 
-     * @param accessToken Új access token
-     * @param refreshToken Új refresh token
+     * @param accessToken Az új access token.
+     * @param refreshToken Az új refresh token.
      */
     suspend fun updateTokens(accessToken: String, refreshToken: String) {
         context.dataStore.edit { preferences ->
@@ -127,7 +137,8 @@ class TokenManager(private val context: Context) {
     /**
      * Összes tárolt adat törlése
      * 
-     * Logout esetén hívjuk meg
+     * Kijelentkezéskor (Logout) hívjuk meg, hogy eltávolítsuk a felhasználó
+     * hitelesítési adatait az eszközről.
      */
     suspend fun clearAll() {
         context.dataStore.edit { preferences ->
