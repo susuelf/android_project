@@ -39,8 +39,11 @@ import com.progress.habittracker.ui.theme.TextSecondary
 import com.progress.habittracker.ui.theme.TextTertiary
 import com.progress.habittracker.ui.viewmodel.HomeViewModel
 import com.progress.habittracker.ui.viewmodel.HomeViewModelFactory
+import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
@@ -147,6 +150,38 @@ fun HomeScreen(
         }
     }
 
+    // DatePicker State
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = uiState.selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                        scope.launch {
+                            pagerState.animateScrollToPage(getPageForDate(selectedDate))
+                        }
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
     Scaffold(
         topBar = {
             // Top App Bar - Dátum navigáció
@@ -190,6 +225,15 @@ fun HomeScreen(
                         scope.launch { pagerState.animateScrollToPage(getPageForDate(LocalDate.now())) }
                     }) {
                         Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.today_caps), color = TextPrimary)
+                    }
+
+                    // Calendar Icon
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Select Date",
+                            tint = TextPrimary
+                        )
                     }
 
                     // Következő nap
