@@ -11,6 +11,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,10 +39,14 @@ import com.progress.habittracker.ui.theme.TextSecondary
 import com.progress.habittracker.ui.theme.TextTertiary
 import com.progress.habittracker.ui.viewmodel.HomeViewModel
 import com.progress.habittracker.ui.viewmodel.HomeViewModelFactory
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
+import java.time.temporal.ChronoUnit
 import java.util.*
+
+private const val START_PAGE = Int.MAX_VALUE / 2
 
 /**
  * Home Screen - Főképernyő (Design frissítve - "Today's plan" + Bottom Navigation)
@@ -79,6 +85,39 @@ fun HomeScreen(
 
     // UI State collect
     val uiState by viewModel.uiState.collectAsState()
+
+    // Pager Logic
+    val anchorDate = remember { LocalDate.now() }
+    val scope = rememberCoroutineScope()
+
+    fun getDateForPage(page: Int): LocalDate {
+        val daysDiff = page - START_PAGE
+        return anchorDate.plusDays(daysDiff.toLong())
+    }
+
+    fun getPageForDate(date: LocalDate): Int {
+        val daysDiff = ChronoUnit.DAYS.between(anchorDate, date).toInt()
+        return START_PAGE + daysDiff
+    }
+
+    val pagerState = rememberPagerState(
+        initialPage = START_PAGE,
+        pageCount = { Int.MAX_VALUE }
+    )
+
+    LaunchedEffect(pagerState.currentPage) {
+        val date = getDateForPage(pagerState.currentPage)
+        if (date != uiState.selectedDate) {
+            viewModel.loadSchedules(date)
+        }
+    }
+
+    LaunchedEffect(uiState.selectedDate) {
+        val targetPage = getPageForDate(uiState.selectedDate)
+        if (pagerState.currentPage != targetPage) {
+            pagerState.animateScrollToPage(targetPage)
+        }
+    }
 
     // Dátum formázók
     val dayOfWeekFormatter = remember { DateTimeFormatter.ofPattern("EEEE", Locale.ENGLISH) }
@@ -135,7 +174,9 @@ fun HomeScreen(
                 },
                 navigationIcon = {
                     // Előző nap
-                    IconButton(onClick = { viewModel.goToPreviousDay() }) {
+                    IconButton(onClick = { 
+                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Previous day",
@@ -145,12 +186,16 @@ fun HomeScreen(
                 },
                 actions = {
                     // Ma gomb
-                    TextButton(onClick = { viewModel.goToToday() }) {
-                        Text("TODAY", color = TextPrimary)
+                    TextButton(onClick = { 
+                        scope.launch { pagerState.animateScrollToPage(getPageForDate(LocalDate.now())) }
+                    }) {
+                        Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.today_caps), color = TextPrimary)
                     }
 
                     // Következő nap
-                    IconButton(onClick = { viewModel.goToNextDay() }) {
+                    IconButton(onClick = { 
+                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                             contentDescription = "Next day",
@@ -178,7 +223,7 @@ fun HomeScreen(
                             contentDescription = "Home"
                         ) 
                     },
-                    label = { Text("Home") },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.home_title)) },
                     selected = selectedNavItem == 0,
                     onClick = { 
                         selectedNavItem = 0
@@ -193,42 +238,18 @@ fun HomeScreen(
                     )
                 )
                 
-                // AI Assistant (Placeholder)
-                NavigationBarItem(
-                    icon = { 
-                        Icon(
-                            if (selectedNavItem == 1) Icons.Filled.Star else Icons.Outlined.Star, 
-                            contentDescription = "AI Assistant"
-                        ) 
-                    },
-                    label = { Text("Assistant") },
-                    selected = selectedNavItem == 1,
-                    onClick = { 
-                        selectedNavItem = 1
-                        // Navigáció AI Assistant placeholder-re
-                        navController.navigate(Screen.ResetPassword.route) // Placeholder route
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = SuccessCyan,
-                        selectedTextColor = SuccessCyan,
-                        indicatorColor = DarkSurface,
-                        unselectedIconColor = TextTertiary,
-                        unselectedTextColor = TextTertiary
-                    )
-                )
-                
                 // Profile
                 NavigationBarItem(
                     icon = { 
                         Icon(
-                            if (selectedNavItem == 2) Icons.Filled.Person else Icons.Outlined.Person, 
+                            if (selectedNavItem == 1) Icons.Filled.Person else Icons.Outlined.Person, 
                             contentDescription = "Profile"
                         ) 
                     },
-                    label = { Text("Profile") },
-                    selected = selectedNavItem == 2,
+                    label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.profile_title)) },
+                    selected = selectedNavItem == 1,
                     onClick = { 
-                        selectedNavItem = 2
+                        selectedNavItem = 1
                         navController.navigate(Screen.Profile.route)
                     },
                     colors = NavigationBarItemDefaults.colors(
@@ -257,68 +278,85 @@ fun HomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = DarkBackground
     ) { paddingValues ->
-        Column(
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        ) {
-            // "Today's plan" Header
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-            ) {
-                Text(
-                    text = "Today's plan",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                    fontSize = 24.sp
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Text(
-                    text = "${uiState.selectedDate.format(dayOfWeekFormatter)}, ${uiState.selectedDate.format(dateFormatter)}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = TextSecondary,
-                    fontSize = 16.sp
-                )
-            }
+        ) { page ->
+            val pageDate = getDateForPage(page)
             
-            // Tartalom
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-            ) {
-                when {
-                    // Loading állapot
-                    uiState.isLoading && uiState.schedules.isEmpty() -> {
-                        LoadingState()
-                    }
-
-                    // Üres állapot - nincs schedule
-                    !uiState.isLoading && uiState.schedules.isEmpty() -> {
-                        EmptyState(
-                            onCreateSchedule = { navController.navigate(Screen.CreateSchedule.route) }
+            if (pageDate == uiState.selectedDate) {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // "Today's plan" Header
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 16.dp)
+                    ) {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.todays_plan),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary,
+                            fontSize = 24.sp
+                        )
+                        
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        Text(
+                            text = "${uiState.selectedDate.format(dayOfWeekFormatter)}, ${uiState.selectedDate.format(dateFormatter)}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = TextSecondary,
+                            fontSize = 16.sp
                         )
                     }
-
-                    // Schedules megjelenítése időszakok szerint csoportosítva
-                    else -> {
-                        ScheduleListGroupedByTimeOfDay(
-                            schedules = uiState.schedules,
-                            isRefreshing = uiState.isRefreshing,
-                            onRefresh = { viewModel.refreshSchedules() },
-                            onScheduleClick = { scheduleId ->
-                                navController.navigate(Screen.ScheduleDetails.createRoute(scheduleId))
-                            },
-                            onStatusToggle = { scheduleId, currentStatus ->
-                                viewModel.toggleScheduleStatus(scheduleId, currentStatus)
+                    
+                    // Tartalom
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(1f)
+                    ) {
+                        when {
+                            // Loading állapot
+                            uiState.isLoading && uiState.schedules.isEmpty() -> {
+                                LoadingState()
                             }
-                        )
+
+                            // Üres állapot - nincs schedule
+                            !uiState.isLoading && uiState.schedules.isEmpty() -> {
+                                EmptyState(
+                                    onCreateSchedule = { navController.navigate(Screen.CreateSchedule.route) }
+                                )
+                            }
+
+                            // Schedules megjelenítése időszakok szerint csoportosítva
+                            else -> {
+                                ScheduleListGroupedByTimeOfDay(
+                                    schedules = uiState.schedules,
+                                    isRefreshing = uiState.isRefreshing,
+                                    onRefresh = { viewModel.refreshSchedules() },
+                                    onScheduleClick = { scheduleId ->
+                                        navController.navigate(Screen.ScheduleDetails.createRoute(scheduleId))
+                                    },
+                                    onStatusToggle = { scheduleId, currentStatus ->
+                                        viewModel.toggleScheduleStatus(scheduleId, currentStatus)
+                                    }
+                                )
+                            }
+                        }
                     }
+                }
+            } else {
+                // Loading placeholder for off-screen pages
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
         }
@@ -342,7 +380,7 @@ private fun LoadingState() {
         ) {
             CircularProgressIndicator()
             Text(
-                text = "Schedule-ok betöltése...",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.loading_schedules),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -378,14 +416,14 @@ private fun EmptyState(
             )
 
             Text(
-                text = "Nincs scheduled feladat erre a napra",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.no_schedules_for_day),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
 
             Text(
-                text = "Adj hozzá egy új scheduled-ot a + gombbal!",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.add_new_schedule_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -403,7 +441,7 @@ private fun EmptyState(
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Új Schedule")
+                Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.new_schedule))
             }
         }
     }
@@ -513,9 +551,9 @@ private fun getTimeOfDay(startTimeString: String): TimeOfDay {
 @Composable
 private fun TimeOfDayHeader(timeOfDay: TimeOfDay) {
     val (emoji, label) = when (timeOfDay) {
-        TimeOfDay.Morning -> "🌅" to "Morning"
-        TimeOfDay.Afternoon -> "🍂" to "Afternoon"
-        TimeOfDay.Night -> "🌙" to "Night"
+        TimeOfDay.Morning -> "🌅" to androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.morning)
+        TimeOfDay.Afternoon -> "🍂" to androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.afternoon)
+        TimeOfDay.Night -> "🌙" to androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.night)
     }
     
     Row(
