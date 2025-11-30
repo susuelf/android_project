@@ -95,9 +95,11 @@ class EditProfileViewModel(
 							it.copy(
 								isUploadingImage = false,
 								profile = updated,
-								// Feltöltés sikerült -> törölhetjük a lokális file referenciát, a szerver URL él
-								selectedImageFile = null,
-								// reseteljük a success flag-et, itt nem navigálunk
+								// FIX: Optimistic Update
+								// Nem töröljük a selectedImageFile-t, mert a backend nem mindig adja vissza
+								// helyesen az új URL-t. Így a UI továbbra is a lokális képet mutatja,
+								// ami biztosítja az azonnali visszajelzést.
+								// selectedImageFile = null, <-- Ezt kivettük
 								updateSuccess = false,
 								error = null
 							)
