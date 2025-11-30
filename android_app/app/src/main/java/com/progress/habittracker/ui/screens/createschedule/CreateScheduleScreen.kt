@@ -83,12 +83,12 @@ fun CreateScheduleScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Új Schedule") },
+                title = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.create_schedule_title)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Vissza"
+                            contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.back)
                         )
                     }
                 }
@@ -190,13 +190,13 @@ private fun HabitSelectionSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Habit",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.habit_label),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 
                 TextButton(onClick = onAddNewHabit) {
-                    Text("+ Új Habit")
+                    Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.add_new_habit_button))
                 }
             }
 
@@ -212,7 +212,7 @@ private fun HabitSelectionSection(
                     onExpandedChange = { expanded = it }
                 ) {
                     OutlinedTextField(
-                        value = selectedHabit?.name ?: "Válassz habit-et",
+                        value = selectedHabit?.name ?: androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.select_habit_placeholder),
                         onValueChange = {},
                         readOnly = true,
                         modifier = Modifier
@@ -270,7 +270,7 @@ private fun TimeSection(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Időpont és időtartam",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.time_and_duration_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -298,7 +298,7 @@ private fun TimeSection(
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Kezdés: ${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))}")
+                Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.start_time_prefix) + startTime.format(DateTimeFormatter.ofPattern("HH:mm")))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -311,7 +311,7 @@ private fun TimeSection(
                     durationText = it
                     it.toIntOrNull()?.let { minutes -> onDurationChange(minutes) }
                 },
-                label = { Text("Időtartam (perc)") },
+                label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.duration_min_label)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -331,7 +331,7 @@ private fun RepeatPatternSection(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Ismétlődés",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.repeat_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -345,14 +345,14 @@ private fun RepeatPatternSection(
                 FilterChip(
                     selected = repeatPattern == RepeatPattern.None,
                     onClick = { onPatternChange(RepeatPattern.None) },
-                    label = { Text("Egyszeri") },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.repeat_once)) },
                     modifier = Modifier.weight(1f)
                 )
 
                 FilterChip(
                     selected = repeatPattern == RepeatPattern.Daily,
                     onClick = { onPatternChange(RepeatPattern.Daily) },
-                    label = { Text("Napi") },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.repeat_daily)) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -366,14 +366,14 @@ private fun RepeatPatternSection(
                 FilterChip(
                     selected = repeatPattern == RepeatPattern.Weekdays,
                     onClick = { onPatternChange(RepeatPattern.Weekdays) },
-                    label = { Text("Hétköznap") },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.repeat_weekdays)) },
                     modifier = Modifier.weight(1f)
                 )
 
                 FilterChip(
                     selected = repeatPattern == RepeatPattern.Weekends,
                     onClick = { onPatternChange(RepeatPattern.Weekends) },
-                    label = { Text("Hétvége") },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.repeat_weekends)) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -393,7 +393,7 @@ private fun NotesSection(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Jegyzetek",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.notes_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -403,7 +403,7 @@ private fun NotesSection(
             OutlinedTextField(
                 value = notes,
                 onValueChange = onNotesChange,
-                placeholder = { Text("Opcionális jegyzetek...") },
+                placeholder = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.notes_placeholder)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
@@ -440,7 +440,7 @@ private fun BottomBar(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Schedule létrehozása")
+                    Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.create_schedule_button))
                 }
             }
         }

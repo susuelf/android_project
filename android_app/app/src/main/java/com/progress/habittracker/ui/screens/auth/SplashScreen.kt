@@ -89,7 +89,7 @@ fun SplashScreen(
             
             // App név
             Text(
-                text = "Progr3SS",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.app_name),
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary
@@ -99,7 +99,7 @@ fun SplashScreen(
             
             // Alcím
             Text(
-                text = "Habit Planner & Tracker",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.app_subtitle),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )

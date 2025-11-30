@@ -105,12 +105,12 @@ fun EditProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profil Szerkesztése") },
+                title = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.edit_profile_title)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Vissza"
+                            contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.back)
                         )
                     }
                 }
@@ -203,7 +203,7 @@ private fun EditProfileContent(
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
-                Text("Változtatások Mentése")
+                Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.save_changes))
             }
         }
     }
@@ -237,7 +237,7 @@ private fun ProfileImageSection(
                             .data(selectedImageFile)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Kiválasztott profilkép",
+                        contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.selected_profile_image),
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(CircleShape),
@@ -250,7 +250,7 @@ private fun ProfileImageSection(
                             .data(currentImageUrl)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Profilkép",
+                        contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.profile_image),
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(CircleShape),
@@ -264,7 +264,7 @@ private fun ProfileImageSection(
                     ) {
                         Icon(
                             imageVector = Icons.Default.CameraAlt,
-                            contentDescription = "Nincs kép",
+                            contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.no_image),
                             modifier = Modifier.size(48.dp),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -300,7 +300,7 @@ private fun ProfileImageSection(
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Kép Választása")
+            Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.select_image))
         }
     }
 }
@@ -317,7 +317,7 @@ private fun EmailCard(email: String) {
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Email",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -329,7 +329,7 @@ private fun EmailCard(email: String) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Az email nem módosítható",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email_not_editable),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -349,7 +349,7 @@ private fun UsernameCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Felhasználónév",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.username_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -358,7 +358,7 @@ private fun UsernameCard(
                 value = username,
                 onValueChange = onUsernameChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Add meg a felhasználóneved") },
+                placeholder = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.username_placeholder)) },
                 singleLine = true
             )
         }
@@ -380,7 +380,7 @@ private fun DescriptionCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Bemutatkozás",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.bio_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -391,7 +391,7 @@ private fun DescriptionCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
-                placeholder = { Text("Mesélj magadról...") },
+                placeholder = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.bio_placeholder)) },
                 maxLines = 5,
                 isError = isOverLimit,
                 supportingText = {
@@ -440,7 +440,7 @@ private fun ErrorState(
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = onRetry) {
-                Text("Újrapróbálás")
+                Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.retry))
             }
         }
     }

@@ -55,6 +55,21 @@ interface ScheduleApiService {
         @Path("id") id: Int,
         @Header("Authorization") authorization: String
     ): Response<ScheduleResponseDto>
+
+    /**
+     * Schedule-ok lekérése habit ID alapján
+     * 
+     * Backend endpoint: GET /schedule/habit/{habitId}
+     * 
+     * @param habitId Habit egyedi azonosítója
+     * @param authorization Bearer token
+     * @return Response<List<ScheduleResponseDto>> - Schedule-ok listája
+     */
+    @GET("schedule/habit/{habitId}")
+    suspend fun getSchedulesByHabitId(
+        @Path("habitId") habitId: Int,
+        @Header("Authorization") authorization: String
+    ): Response<List<ScheduleResponseDto>>
     
     /**
      * Schedule státuszának frissítése

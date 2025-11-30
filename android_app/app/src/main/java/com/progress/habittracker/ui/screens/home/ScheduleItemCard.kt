@@ -54,21 +54,14 @@ fun ScheduleItemCard(
     onStatusToggle: (Int, ScheduleStatus) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Progress percentage számítás (időalapú)
-    val totalLoggedTime = schedule.progress
-        ?.filter { it.isCompleted }
-        ?.sumOf { it.loggedTime ?: 0 } ?: 0
-    val scheduleDuration = schedule.durationMinutes ?: 1
-    val progressPercentage = ((totalLoggedTime.toFloat() / scheduleDuration.toFloat()) * 100f).coerceIn(0f, 100f)
+    // UI állapot számítása a központosított kalkulátorral
+    val uiState = com.progress.habittracker.util.ScheduleStateCalculator.calculate(schedule)
     
-    // Progress 100% ha van elég logged time
-    val isProgressComplete = totalLoggedTime >= scheduleDuration
+    // Automatikus Completed státusz ha a kalkulátor szerint kész
+    val effectiveStatus = if (uiState.isChecked) ScheduleStatus.Completed else ScheduleStatus.Planned
     
-    // Automatikus Completed státusz ha progress 100%
-    val effectiveStatus = if (isProgressComplete) ScheduleStatus.Completed else schedule.status
-    
-    // Csak akkor disabled ha a progress ténylegesen 100% (nem csak checkbox)
-    val isDisabled = isProgressComplete
+    // Interakció tiltása ha a kalkulátor szerint disabled
+    val isDisabled = !uiState.isEnabled
     
     // Habit ikon szín (alapból HabitBlue, kategória szerint variálható)
     val habitIconColor = HabitBlue // Később kategória alapján lehet testreszabni
@@ -149,9 +142,9 @@ fun ScheduleItemCard(
                         ScheduleStatus.Planned, ScheduleStatus.Skipped -> Icons.Outlined.Circle
                     },
                     contentDescription = when (effectiveStatus) {
-                        ScheduleStatus.Completed -> "Completed"
-                        ScheduleStatus.Planned -> "Not completed"
-                        ScheduleStatus.Skipped -> "Skipped"
+                        ScheduleStatus.Completed -> androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.status_completed)
+                        ScheduleStatus.Planned -> androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.status_not_completed)
+                        ScheduleStatus.Skipped -> androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.status_skipped)
                     },
                     tint = when {
                         effectiveStatus == ScheduleStatus.Completed -> SuccessCyan

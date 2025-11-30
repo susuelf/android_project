@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -49,9 +50,10 @@ fun ProfileScreen(
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
     val profileRepository = remember { ProfileRepository(tokenManager) }
+    val scheduleRepository = remember { com.progress.habittracker.data.repository.ScheduleRepository(tokenManager) }
 
     val viewModel: ProfileViewModel = viewModel(
-        factory = ProfileViewModelFactory(profileRepository, tokenManager)
+        factory = ProfileViewModelFactory(profileRepository, scheduleRepository, tokenManager)
     )
 
     val uiState by viewModel.uiState.collectAsState()
@@ -62,8 +64,8 @@ fun ProfileScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Kijelentkezés") },
-            text = { Text("Biztosan ki szeretnél jelentkezni?") },
+            title = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.logout_confirmation_title)) },
+            text = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.logout_confirmation_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -74,12 +76,12 @@ fun ProfileScreen(
                         }
                     }
                 ) {
-                    Text("Kijelentkezés")
+                    Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.logout))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Mégse")
+                    Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.cancel))
                 }
             }
         )
@@ -88,12 +90,12 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profil") },
+                title = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.profile_title)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Vissza"
+                            contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.back)
                         )
                     }
                 },
@@ -101,7 +103,7 @@ fun ProfileScreen(
                     IconButton(onClick = { showLogoutDialog = true }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Logout,
-                            contentDescription = "Kijelentkezés"
+                            contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.logout)
                         )
                     }
                 }
@@ -127,13 +129,13 @@ fun ProfileScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = uiState.error ?: "Ismeretlen hiba",
+                            text = uiState.error ?: androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.unknown_error),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = { viewModel.loadProfile() }) {
-                            Text("Újrapróbálás")
+                            Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.retry))
                         }
                     }
                 }
@@ -141,6 +143,7 @@ fun ProfileScreen(
                     ProfileContent(
                         profile = uiState.profile!!,
                         habits = uiState.habits,
+                        habitStats = uiState.habitStats,
                         isLoadingHabits = uiState.isLoadingHabits,
                         onEditProfile = { navController.navigate(Screen.EditProfile.route) }
                     )
@@ -157,6 +160,7 @@ fun ProfileScreen(
 private fun ProfileContent(
     profile: com.progress.habittracker.data.model.ProfileResponseDto,
     habits: List<HabitResponseDto>,
+    habitStats: Map<Int, Float>,
     isLoadingHabits: Boolean,
     onEditProfile: () -> Unit
 ) {
@@ -182,7 +186,7 @@ private fun ProfileContent(
                             .data(profile.profileImageUrl ?: "https://via.placeholder.com/150")
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Profilkép",
+                        contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.profile_picture_content_desc),
                         modifier = Modifier
                             .size(120.dp)
                             .clip(CircleShape),
@@ -227,7 +231,7 @@ private fun ProfileContent(
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Profil szerkesztése")
+                        Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.edit_profile))
                     }
                 }
             }
@@ -236,7 +240,7 @@ private fun ProfileContent(
         // Habit-ek szekció
         item {
             Text(
-                text = "Szokásaim (${habits.size})",
+                text = "${androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.my_habits)} (${habits.size})",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -259,7 +263,7 @@ private fun ProfileContent(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Még nincs létrehozott szokásod",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.no_habits_yet),
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -268,7 +272,10 @@ private fun ProfileContent(
             }
         } else {
             items(habits) { habit ->
-                HabitItem(habit = habit)
+                HabitItem(
+                    habit = habit,
+                    consistency = habitStats[habit.id] ?: 0f
+                )
             }
         }
     }
@@ -278,7 +285,10 @@ private fun ProfileContent(
  * Habit item megjelenítése
  */
 @Composable
-private fun HabitItem(habit: HabitResponseDto) {
+private fun HabitItem(
+    habit: HabitResponseDto,
+    consistency: Float
+) {
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -287,11 +297,24 @@ private fun HabitItem(habit: HabitResponseDto) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Text(
-                text = habit.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = habit.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                // Kategória chip
+                AssistChip(
+                    onClick = { },
+                    label = { Text(habit.category.name) },
+                    modifier = Modifier.height(24.dp)
+                )
+            }
 
             if (!habit.description.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
@@ -305,19 +328,43 @@ private fun HabitItem(habit: HabitResponseDto) {
             if (!habit.goal.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Cél: ${habit.goal}",
+                    text = "${androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.habit_goal_prefix)}${habit.goal}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Kategória chip
-            AssistChip(
-                onClick = { },
-                label = { Text(habit.category.name) }
-            )
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Consistency Progress Bar
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.habit_consistency),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${(consistency * 100).toInt()}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                LinearProgressIndicator(
+                    progress = { consistency },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
+            }
         }
     }
 }

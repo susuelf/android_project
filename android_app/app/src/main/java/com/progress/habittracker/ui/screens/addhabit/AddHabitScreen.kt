@@ -86,12 +86,12 @@ fun AddHabitScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add New Habit", color = TextPrimary) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.add_new_habit_title), color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.back),
                             tint = TextPrimary
                         )
                     }
@@ -134,7 +134,7 @@ fun AddHabitScreen(
                     item {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = "Habit Name",
+                                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.habit_name_label),
                                 color = TextPrimary,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
@@ -145,7 +145,7 @@ fun AddHabitScreen(
                                 value = uiState.name,
                                 onValueChange = { viewModel.setName(it) },
                                 placeholder = { 
-                                    Text("e.g., Morning run", color = TextTertiary) 
+                                    Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.habit_name_placeholder), color = TextTertiary) 
                                 },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
@@ -167,7 +167,7 @@ fun AddHabitScreen(
                     item {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = "Description",
+                                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.description_label),
                                 color = TextPrimary,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
@@ -175,7 +175,7 @@ fun AddHabitScreen(
                             )
                             
                             Text(
-                                text = "A short motivation or explanation behind the habit",
+                                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.description_hint),
                                 color = TextSecondary,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(bottom = 8.dp)
@@ -185,7 +185,7 @@ fun AddHabitScreen(
                                 value = uiState.description,
                                 onValueChange = { viewModel.setDescription(it) },
                                 placeholder = { 
-                                    Text("e.g., Run 2km in the park every morning", color = TextTertiary) 
+                                    Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.description_placeholder), color = TextTertiary) 
                                 },
                                 minLines = 3,
                                 maxLines = 5,
@@ -208,7 +208,7 @@ fun AddHabitScreen(
                     item {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = "Set a Goal",
+                                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.set_goal_label),
                                 color = TextPrimary,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
@@ -219,7 +219,7 @@ fun AddHabitScreen(
                                 value = uiState.goal,
                                 onValueChange = { viewModel.setGoal(it) },
                                 placeholder = { 
-                                    Text("e.g., 10 times in 2 weeks", color = TextTertiary) 
+                                    Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.goal_placeholder), color = TextTertiary) 
                                 },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
@@ -241,7 +241,7 @@ fun AddHabitScreen(
                     item {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = "Select Category",
+                                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.select_category_label),
                                 color = TextPrimary,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
@@ -249,7 +249,7 @@ fun AddHabitScreen(
                             )
                             
                             Text(
-                                text = "Choose an icon to define the habit's category",
+                                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.select_category_hint),
                                 color = TextSecondary,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(bottom = 12.dp)
@@ -305,7 +305,7 @@ fun AddHabitScreen(
                         shape = RoundedCornerShape(27.dp)
                     ) {
                         Text(
-                            "Cancel",
+                            androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.cancel),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Medium
                         )
@@ -332,7 +332,7 @@ fun AddHabitScreen(
                             )
                         } else {
                             Text(
-                                text = "Create",
+                                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.create),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )

@@ -7,10 +7,14 @@ import com.progress.habittracker.data.local.TokenManager
 import com.progress.habittracker.data.model.HabitResponseDto
 import com.progress.habittracker.data.model.ProfileResponseDto
 import com.progress.habittracker.data.repository.ProfileRepository
+import com.progress.habittracker.data.repository.ScheduleRepository
 import com.progress.habittracker.util.Resource
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -22,10 +26,12 @@ import kotlinx.coroutines.launch
  * Funkciók:
  * - Profil betöltése
  * - Habit-ek betöltése
+ * - Habit statisztikák számítása
  * - Kijelentkezés
  */
 class ProfileViewModel(
     private val profileRepository: ProfileRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val tokenManager: TokenManager
 ) : ViewModel() {
 
@@ -43,6 +49,7 @@ class ProfileViewModel(
         val isLoading: Boolean = false,
         val profile: ProfileResponseDto? = null,
         val habits: List<HabitResponseDto> = emptyList(),
+        val habitStats: Map<Int, Float> = emptyMap(), // Habit ID -> Consistency % (0.0 - 1.0)
         val isLoadingHabits: Boolean = false,
         val error: String? = null
     )
@@ -101,6 +108,8 @@ class ProfileViewModel(
                                     habits = habits
                                 )
                             }
+                            // Statisztikák számítása
+                            calculateHabitStats(habits)
                         }
                     }
                     is Resource.Error -> {
@@ -108,6 +117,48 @@ class ProfileViewModel(
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Statisztikák számítása minden habit-hez
+     */
+    private fun calculateHabitStats(habits: List<HabitResponseDto>) {
+        viewModelScope.launch {
+            val stats = mutableMapOf<Int, Float>()
+            
+            // Párhuzamos lekérdezések
+            val deferredStats = habits.map { habit ->
+                async {
+                    try {
+                        val schedulesResource = scheduleRepository.getSchedulesByHabitId(habit.id).first()
+                        if (schedulesResource is Resource.Success) {
+                            val schedules = schedulesResource.data ?: emptyList()
+                            if (schedules.isNotEmpty()) {
+                                val totalPercentage = schedules.sumOf { schedule ->
+                                    // Idő alapú progress számítás a központosított kalkulátorral
+                                    val uiState = com.progress.habittracker.util.ScheduleStateCalculator.calculate(schedule)
+                                    (uiState.progressPercentage / 100.0)
+                                }
+                                val average = totalPercentage / schedules.size
+                                habit.id to average.toFloat()
+                            } else {
+                                habit.id to 0f
+                            }
+                        } else {
+                            habit.id to 0f
+                        }
+                    } catch (e: Exception) {
+                        habit.id to 0f
+                    }
+                }
+            }
+            
+            deferredStats.awaitAll().forEach { (id, stat) ->
+                stats[id] = stat
+            }
+            
+            _uiState.update { it.copy(habitStats = stats) }
         }
     }
 
@@ -133,12 +184,13 @@ class ProfileViewModel(
  */
 class ProfileViewModelFactory(
     private val profileRepository: ProfileRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val tokenManager: TokenManager
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
-            return ProfileViewModel(profileRepository, tokenManager) as T
+            return ProfileViewModel(profileRepository, scheduleRepository, tokenManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

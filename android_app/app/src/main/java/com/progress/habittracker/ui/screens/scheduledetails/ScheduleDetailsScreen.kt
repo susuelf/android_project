@@ -110,12 +110,12 @@ fun ScheduleDetailsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Schedule Details", color = TextPrimary) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.schedule_details_title), color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.back),
                             tint = TextPrimary
                         )
                     }
@@ -129,7 +129,7 @@ fun ScheduleDetailsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Menu",
+                                contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.menu),
                                 tint = TextPrimary
                             )
                         }
@@ -139,7 +139,7 @@ fun ScheduleDetailsScreen(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Edit Schedule") },
+                                text = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.edit_schedule)) },
                                 onClick = {
                                     showMenu = false
                                     navController.navigate(Screen.EditSchedule.createRoute(scheduleId))
@@ -149,7 +149,7 @@ fun ScheduleDetailsScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Delete Schedule") },
+                                text = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.delete_schedule)) },
                                 onClick = {
                                     showMenu = false
                                     showDeleteDialog = true
@@ -181,12 +181,12 @@ fun ScheduleDetailsScreen(
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Add Progress"
+                        contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.add_progress)
                     )
                 },
                 text = {
                     Text(
-                        text = "Add Progress",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.add_progress),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp
                     )
@@ -205,6 +205,7 @@ fun ScheduleDetailsScreen(
                 ScheduleDetailsContent(
                     schedule = uiState.schedule!!,
                     daySchedules = uiState.daySchedules,
+                    viewModel = viewModel,
                     onEditNotesClick = { showEditNotesDialog = true },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -265,6 +266,7 @@ fun ScheduleDetailsScreen(
 private fun ScheduleDetailsContent(
     schedule: ScheduleResponseDto,
     daySchedules: List<ScheduleResponseDto>,
+    viewModel: ScheduleDetailsViewModel,
     onEditNotesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -280,7 +282,7 @@ private fun ScheduleDetailsContent(
 
         // 2. Progress Bar Card
         item {
-            ProgressBarCard(schedule = schedule)
+            ProgressBarCard(schedule = schedule, viewModel = viewModel)
         }
 
         // 3. Notes Card
@@ -320,10 +322,10 @@ private fun ScheduleDetailsContent(
 @Composable
 private fun HabitInfoCard(schedule: ScheduleResponseDto) {
     val habit = schedule.habit
-    val totalLoggedTime = schedule.progress?.filter { it.isCompleted }?.sumOf { it.loggedTime ?: 0 } ?: 0
-    val scheduleDuration = schedule.durationMinutes ?: 0
-    val isProgressComplete = scheduleDuration > 0 && totalLoggedTime >= scheduleDuration
-    val displayStatus = if (isProgressComplete) ScheduleStatus.Completed else schedule.status
+    
+    // UI állapot számítása a központosított kalkulátorral
+    val uiState = com.progress.habittracker.util.ScheduleStateCalculator.calculate(schedule)
+    val displayStatus = if (uiState.isChecked) ScheduleStatus.Completed else schedule.status
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -511,22 +513,17 @@ private fun HabitInfoCard(schedule: ScheduleResponseDto) {
  * - Completed time vs duration text: "X/Y minutes"
  */
 @Composable
-private fun ProgressBarCard(schedule: ScheduleResponseDto) {
+private fun ProgressBarCard(
+    schedule: ScheduleResponseDto,
+    viewModel: ScheduleDetailsViewModel
+) {
     // Összes eltöltött idő kiszámítása a progressekből
-    val totalLoggedTime = schedule.progress
-        ?.filter { it.isCompleted }
-        ?.sumOf { it.loggedTime ?: 0 } ?: 0
-    
-    val scheduleDuration = schedule.durationMinutes ?: 1 // Avoid division by zero
+    val totalLoggedTime = viewModel.getTotalLoggedTime()
+    val scheduleDuration = schedule.durationMinutes ?: 0
 
-    // Ha a felhasználó manuálisan kipipálta (status=Completed), de a progress még nem töltötte ki a teljes időt,
-    // akkor a progress bar legyen 100%, DE az alatta lévő idő szöveg maradjon a tényleges logged time.
-    val naturalPercentage = ((totalLoggedTime.toFloat() / scheduleDuration.toFloat()) * 100f).coerceIn(0f, 100f)
-    val percentage = if (schedule.status == ScheduleStatus.Completed && totalLoggedTime < scheduleDuration) {
-        100f
-    } else {
-        naturalPercentage
-    }
+    // Százalék számítás a ViewModel-ből (központosított logika)
+    val uiState = viewModel.getScheduleUiState()
+    val percentage = uiState.progressPercentage
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -655,12 +652,11 @@ private fun NotesCard(
 }
 
 /**
- * 4. Recent Activity Card - Dark Theme
+ * 4. Daily Schedule Card - Dark Theme
  * 
  * Tartalom:
- * - "Recent Activity" cím
- * - Más scheduleok ugyanazon a napon (historical data)
- * - Scheduleok státusza és időpontja (az aktuális schedule előtt)
+ * - "Daily Schedule" cím
+ * - Az adott nap összes schedule-je (kivéve a jelenlegit)
  */
 @Composable
 private fun RecentActivityCard(
@@ -678,7 +674,7 @@ private fun RecentActivityCard(
             modifier = Modifier.padding(20.dp)
         ) {
             Text(
-                text = "Recent Activity",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.daily_schedule_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -689,13 +685,13 @@ private fun RecentActivityCard(
             
             // Más scheduleok ugyanazon a napon
             if (daySchedules.isNotEmpty()) {
-                daySchedules.take(5).forEach { daySchedule ->
+                daySchedules.forEach { daySchedule ->
                     ScheduleActivityItem(schedule = daySchedule)
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             } else {
                 Text(
-                    text = "No earlier activities today",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.no_other_schedules),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextTertiary,
                     fontSize = 14.sp
@@ -919,7 +915,7 @@ private fun EditNotesDialog(
         containerColor = DarkSurface,
         title = {
             Text(
-                text = "Edit Notes",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.edit_notes_title),
                 color = TextPrimary,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
@@ -934,7 +930,7 @@ private fun EditNotesDialog(
                     .height(200.dp),
                 placeholder = {
                     Text(
-                        text = "Add your notes here...",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.edit_notes_placeholder),
                         color = TextTertiary
                     )
                 },
@@ -969,7 +965,7 @@ private fun EditNotesDialog(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Save")
+                    Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.save))
                 }
             }
         },
@@ -979,7 +975,7 @@ private fun EditNotesDialog(
                 enabled = !isLoading
             ) {
                 Text(
-                    text = "Cancel",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.cancel),
                     color = TextSecondary
                 )
             }

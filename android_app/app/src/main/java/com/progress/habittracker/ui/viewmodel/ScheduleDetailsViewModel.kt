@@ -101,28 +101,17 @@ class ScheduleDetailsViewModel(
             scheduleRepository.getSchedulesByDay(date).collect { resource ->
                 when (resource) {
                     is Resource.Success -> {
-                        val currentSchedule = _uiState.value.schedule
-                        val currentStartTime = try {
-                            java.time.LocalTime.parse(currentSchedule?.startTime ?: "00:00")
-                        } catch (e: Exception) {
-                            java.time.LocalTime.now()
-                        }
+                        // Minden schedule az adott napon, kivéve a jelenlegit
+                        // A felhasználó kérése alapján az ÖSSZES schedule-t listázzuk, de a jelenlegit
+                        // érdemes kihagyni a duplikáció elkerülése végett, vagy megjeleníteni másképp.
+                        // A "Recent Activity" helyett "Daily Schedule List" lesz, így logikusabb a teljes lista.
+                        // De a Details nézetben vagyunk, így a fókusz a kiválasztott elemen van.
+                        // A kérés: "az adott naphoz tartozó ÖSSZES schedule megjelenjen benne".
                         
-                        // Csak azok a scheduleok, amik az aktuális schedule előtt vannak
-                        val filteredSchedules = resource.data?.filter { schedule ->
-                            schedule.id != scheduleId && try {
-                                // Parse start time properly
-                                val timeStr = if (schedule.startTime.contains('T')) {
-                                    schedule.startTime.substringAfter('T').substringBefore('Z').substringBefore('+')
-                                } else {
-                                    schedule.startTime
-                                }
-                                val scheduleTime = java.time.LocalTime.parse(timeStr)
-                                scheduleTime.isBefore(currentStartTime)
-                            } catch (e: Exception) {
-                                false
-                            }
-                        }?.sortedByDescending { 
+                        val allSchedules = resource.data?.filter { schedule ->
+                            schedule.id != scheduleId
+                        }?.sortedBy { 
+                            // Időrendi sorrend (növekvő)
                             try {
                                 val timeStr = if (it.startTime.contains('T')) {
                                     it.startTime.substringAfter('T').substringBefore('Z').substringBefore('+')
@@ -135,14 +124,13 @@ class ScheduleDetailsViewModel(
                             }
                         } ?: emptyList()
                         
-                        _uiState.update { it.copy(daySchedules = filteredSchedules) }
+                        _uiState.update { it.copy(daySchedules = allSchedules) }
                     }
                     is Resource.Error -> {
-                        // Nem kritikus hiba, nem állítunk error-t
                         _uiState.update { it.copy(daySchedules = emptyList()) }
                     }
                     is Resource.Loading -> {
-                        // Nem jelezünk külön loading state-t
+                        // Opcionális: loading state kezelése
                     }
                 }
             }
@@ -214,6 +202,8 @@ class ScheduleDetailsViewModel(
                                 error = null
                             )
                         }
+                        // Frissítjük a listát is, hogy a változások tükröződjenek
+                        scheduleRepository.refresh()
                     }
 
                     is Resource.Error -> {
@@ -315,24 +305,11 @@ class ScheduleDetailsViewModel(
     }
 
     /**
-     * Progress százalék számítása időalapú
-     * Eltöltött idő / schedule duration
-     * @return 0-100 közötti érték
+     * UI állapot számítása a központosított kalkulátorral
      */
-    fun calculateProgressPercentage(): Float {
-        val schedule = _uiState.value.schedule ?: return 0f
-        
-        // Schedule időtartam (target)
-        val scheduleDuration = schedule.durationMinutes ?: return 0f
-        if (scheduleDuration <= 0) return 0f
-
-        // Összes eltöltött idő a progressekből (csak completed)
-        val totalLoggedTime = schedule.progress
-            ?.filter { it.isCompleted }
-            ?.sumOf { it.loggedTime ?: 0 } ?: 0
-
-        // Százalék számítás: eltöltött idő / schedule időtartam
-        return ((totalLoggedTime.toFloat() / scheduleDuration.toFloat()) * 100f).coerceIn(0f, 100f)
+    fun getScheduleUiState(): com.progress.habittracker.util.ScheduleUiState {
+        val schedule = _uiState.value.schedule ?: return com.progress.habittracker.util.ScheduleUiState(0f, false, false)
+        return com.progress.habittracker.util.ScheduleStateCalculator.calculate(schedule)
     }
 
     /**
@@ -340,7 +317,7 @@ class ScheduleDetailsViewModel(
      */
     fun getTotalLoggedTime(): Int {
         return _uiState.value.schedule?.progress
-            ?.filter { it.isCompleted }
+            ?.distinctBy { it.id }
             ?.sumOf { it.loggedTime ?: 0 } ?: 0
     }
 }

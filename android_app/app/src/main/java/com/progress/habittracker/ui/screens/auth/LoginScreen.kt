@@ -125,7 +125,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Habit Planner & Tracker",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.app_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary,
                 fontSize = 16.sp
@@ -157,7 +157,7 @@ fun LoginScreen(
                     shape = RoundedCornerShape(24.dp)
                 ) {
                     Text(
-                        text = "Login",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.login),
                         fontWeight = if (isLoginTab) FontWeight.Bold else FontWeight.Normal
                     )
                 }
@@ -178,7 +178,7 @@ fun LoginScreen(
                     shape = RoundedCornerShape(24.dp)
                 ) {
                     Text(
-                        text = "Register",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.register),
                         fontWeight = FontWeight.Normal
                     )
                 }
@@ -189,7 +189,7 @@ fun LoginScreen(
             // Email mező
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Email",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email),
                     color = TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
@@ -201,7 +201,7 @@ fun LoginScreen(
                     onValueChange = { email = it },
                     placeholder = { 
                         Text(
-                            "Your email address", 
+                            androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email_placeholder), 
                             color = TextTertiary
                         ) 
                     },
@@ -229,7 +229,7 @@ fun LoginScreen(
                 
                 if (email.isNotEmpty() && !viewModel.isValidEmail(email)) {
                     Text(
-                        text = "Invalid email address",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email_invalid),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
@@ -242,7 +242,7 @@ fun LoginScreen(
             // Jelszó mező
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Password",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password),
                     color = TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
@@ -254,7 +254,7 @@ fun LoginScreen(
                     onValueChange = { password = it },
                     placeholder = { 
                         Text(
-                            "Your password", 
+                            androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password_placeholder), 
                             color = TextTertiary
                         ) 
                     },
@@ -266,9 +266,9 @@ fun LoginScreen(
                                 else 
                                     Icons.Default.VisibilityOff,
                                 contentDescription = if (passwordVisible) 
-                                    "Hide password" 
+                                    androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password_hide)
                                 else 
-                                    "Show password",
+                                    androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password_show),
                                 tint = TextTertiary
                             )
                         }
@@ -315,7 +315,7 @@ fun LoginScreen(
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text(
-                    "Forgot Password?",
+                    androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.forgot_password),
                     color = SuccessCyan,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -350,7 +350,7 @@ fun LoginScreen(
                     )
                 } else {
                     Text(
-                        "Log in",
+                        androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.login_action),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -382,7 +382,7 @@ fun LoginScreen(
                     color = TextTertiary.copy(alpha = 0.3f)
                 )
                 Text(
-                    text = "  or login with  ",
+                    text = "  " + androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.or_login_with) + "  ",
                     color = TextTertiary,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -421,7 +421,7 @@ fun LoginScreen(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text(
-                    "Google",
+                    androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.google),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )

@@ -78,8 +78,8 @@ class AddProgressViewModel(
                     is Resource.Success -> {
                         _uiState.update { 
                             val schedule = resource.data
+                            // FONTOS: Nem szűrünk isCompleted-re, minden progress számít
                             val totalLoggedTime = schedule?.progress
-                                ?.filter { it.isCompleted }
                                 ?.sumOf { it.loggedTime ?: 0 } ?: 0
                             val scheduleDuration = schedule?.durationMinutes ?: 0
                             val maxAllowed = (scheduleDuration - totalLoggedTime).coerceAtLeast(0)
@@ -146,12 +146,16 @@ class AddProgressViewModel(
         }
         
         viewModelScope.launch {
+            // Csak akkor jelöljük késznek a progress-t (és ezzel a schedule-t),
+            // ha a hozzáadott idővel elérjük a teljes időtartamot.
+            val isTaskCompleted = timeValue >= state.maxAllowedTime
+
             val request = CreateProgressRequest(
                 scheduleId = scheduleId,
                 date = state.date.format(DateTimeFormatter.ISO_LOCAL_DATE),
                 loggedTime = timeValue,
                 notes = state.notes.takeIf { it.isNotBlank() },
-                isCompleted = true // Progress mindig completed, mert haladást jelent
+                isCompleted = isTaskCompleted
             )
             
             progressRepository.createProgress(request).collect { resource ->

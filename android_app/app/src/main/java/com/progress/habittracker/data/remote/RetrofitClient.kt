@@ -30,6 +30,7 @@ object RetrofitClient {
      * - Fallback: emulator default (10.0.2.2)
      */
     private var baseUrl: String = "http://10.0.2.2:8080/" // Default fallback
+    private lateinit var appContext: Context
     
     /**
      * Inicializálás - Android Context szükséges a dinamikus IP felismeréshez
@@ -39,6 +40,7 @@ object RetrofitClient {
      * @param context Application context
      */
     fun initialize(context: Context) {
+        appContext = context.applicationContext
         baseUrl = NetworkUtils.getBackendBaseUrl(context)
         android.util.Log.d("RetrofitClient", "Backend URL initialized: $baseUrl")
     }
@@ -70,15 +72,23 @@ object RetrofitClient {
      * OkHttpClient - HTTP kliens konfiguráció
      * 
      * - Logging interceptor hozzáadása
+     * - Auth interceptor hozzáadása (automatikus kijelentkeztetés)
      * - Timeout beállítások (30 mp kapcsolódási, olvasási, írási timeout)
      */
     private val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
-            .build()
+
+        if (::appContext.isInitialized) {
+            builder.addInterceptor(AuthInterceptor(appContext))
+        } else {
+            android.util.Log.e("RetrofitClient", "Context not initialized! AuthInterceptor not added.")
+        }
+
+        builder.build()
     }
     
     /**

@@ -102,7 +102,8 @@ class HomeViewModel(
                             schedules = resource.data ?: emptyList(),
                             isLoading = false,
                             error = null,
-                            isRefreshing = false
+                            isRefreshing = false,
+                            selectedDate = targetDate
                         )
                     }
                     
@@ -111,7 +112,8 @@ class HomeViewModel(
                         _uiState.value = _uiState.value.copy(
                             error = resource.message,
                             isLoading = false,
-                            isRefreshing = false
+                            isRefreshing = false,
+                            selectedDate = targetDate
                         )
                     }
                 }
@@ -187,10 +189,8 @@ class HomeViewModel(
             
             if (schedule == null) return@launch
 
-            // Összes completed logged time és a duration kiszámítása
-            val totalLoggedTime = schedule.progress?.filter { it.isCompleted }?.sumOf { it.loggedTime ?: 0 } ?: 0
-            val duration = schedule.durationMinutes ?: 0
-            val isProgressComplete = duration > 0 && totalLoggedTime >= duration
+            // UI állapot számítása a központosított kalkulátorral
+            val uiState = com.progress.habittracker.util.ScheduleStateCalculator.calculate(schedule)
 
             when (currentStatus) {
                 ScheduleStatus.Planned -> {
@@ -199,12 +199,9 @@ class HomeViewModel(
                 }
 
                 ScheduleStatus.Completed -> {
-                    // Completed -> Planned: csak akkor engedjük, ha a progress még nem 100%
-                    if (isProgressComplete) {
-                        // Nem engedjük visszavonni, mert a progress már tele van
-                        _uiState.value = _uiState.value.copy(
-                            error = _uiState.value.error // opcionálisan adhatnánk üzenetet
-                        )
+                    // Completed -> Planned: csak akkor engedjük, ha a kalkulátor szerint engedélyezett
+                    if (!uiState.isEnabled) {
+                        // Nem engedjük visszavonni, mert a progress már tele van (idő alapján kész)
                         // Semmit nem csinálunk
                     } else {
                         updateScheduleStatus(scheduleId, "Planned")

@@ -135,7 +135,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Habit Planner & Tracker",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.app_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary,
                 fontSize = 16.sp
@@ -167,7 +167,7 @@ fun RegisterScreen(
                     shape = RoundedCornerShape(24.dp)
                 ) {
                     Text(
-                        text = "Login",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.login),
                         fontWeight = FontWeight.Normal
                     )
                 }
@@ -187,7 +187,7 @@ fun RegisterScreen(
                     shape = RoundedCornerShape(24.dp)
                 ) {
                     Text(
-                        text = "Register",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.register),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -198,7 +198,7 @@ fun RegisterScreen(
             // Felhasználónév mező
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Username",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.username),
                     color = TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
@@ -210,7 +210,7 @@ fun RegisterScreen(
                     onValueChange = { username = it },
                     placeholder = { 
                         Text(
-                            "Your username", 
+                            androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.username_placeholder), 
                             color = TextTertiary
                         ) 
                     },
@@ -241,7 +241,7 @@ fun RegisterScreen(
             // Email mező
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Email",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email),
                     color = TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
@@ -253,7 +253,7 @@ fun RegisterScreen(
                     onValueChange = { email = it },
                     placeholder = { 
                         Text(
-                            "Your email address", 
+                            androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email_placeholder), 
                             color = TextTertiary
                         ) 
                     },
@@ -281,7 +281,7 @@ fun RegisterScreen(
                 
                 if (email.isNotEmpty() && !viewModel.isValidEmail(email)) {
                     Text(
-                        text = "Invalid email address",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.email_invalid),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
@@ -294,7 +294,7 @@ fun RegisterScreen(
             // Jelszó mező
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Password",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password),
                     color = TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
@@ -306,7 +306,7 @@ fun RegisterScreen(
                     onValueChange = { password = it },
                     placeholder = { 
                         Text(
-                            "Your password", 
+                            androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password_placeholder), 
                             color = TextTertiary
                         ) 
                     },
@@ -318,9 +318,9 @@ fun RegisterScreen(
                                 else 
                                     Icons.Default.VisibilityOff,
                                 contentDescription = if (passwordVisible) 
-                                    "Hide password" 
+                                    androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password_hide)
                                 else 
-                                    "Show password",
+                                    androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password_show),
                                 tint = TextTertiary
                             )
                         }
@@ -353,7 +353,7 @@ fun RegisterScreen(
                 
                 if (password.isNotEmpty() && !viewModel.isValidPassword(password)) {
                     Text(
-                        text = "Password must be at least 6 characters",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password_min_length),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
@@ -366,7 +366,7 @@ fun RegisterScreen(
             // Jelszó megerősítés mező - PIROS SZEGÉLY HA ELTÉR
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Confirm Password",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.confirm_password),
                     color = TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
@@ -378,7 +378,7 @@ fun RegisterScreen(
                     onValueChange = { confirmPassword = it },
                     placeholder = { 
                         Text(
-                            "Confirm your password", 
+                            androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.confirm_password_placeholder), 
                             color = TextTertiary
                         ) 
                     },
@@ -390,9 +390,9 @@ fun RegisterScreen(
                                 else 
                                     Icons.Default.VisibilityOff,
                                 contentDescription = if (confirmPasswordVisible) 
-                                    "Hide password" 
+                                    androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password_hide)
                                 else 
-                                    "Show password",
+                                    androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.password_show),
                                 tint = TextTertiary
                             )
                         }
@@ -434,7 +434,7 @@ fun RegisterScreen(
                 // Hibaüzenet ha a jelszavak nem egyeznek
                 if (passwordMismatch) {
                     Text(
-                        text = "Passwords do not match",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.passwords_do_not_match),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
@@ -476,7 +476,7 @@ fun RegisterScreen(
                     )
                 } else {
                     Text(
-                        "Register",
+                        androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.register),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -508,7 +508,7 @@ fun RegisterScreen(
                     color = TextTertiary.copy(alpha = 0.3f)
                 )
                 Text(
-                    text = "  or register with  ",
+                    text = "  " + androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.or_register_with) + "  ",
                     color = TextTertiary,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -547,7 +547,7 @@ fun RegisterScreen(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text(
-                    "Google",
+                    androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.google),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )

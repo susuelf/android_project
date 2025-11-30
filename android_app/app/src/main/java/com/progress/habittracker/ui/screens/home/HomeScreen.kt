@@ -37,14 +37,9 @@ import com.progress.habittracker.ui.theme.TextSecondary
 import com.progress.habittracker.ui.theme.TextTertiary
 import com.progress.habittracker.ui.viewmodel.HomeViewModel
 import com.progress.habittracker.ui.viewmodel.HomeViewModelFactory
-import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
-import java.time.temporal.ChronoUnit
 import java.util.*
 
 /**
@@ -93,6 +88,9 @@ fun HomeScreen(
     // Snackbar host state
     val snackbarHostState = remember { SnackbarHostState() }
     
+    // Date Picker state
+    var showDatePicker by remember { mutableStateOf(false) }
+    
     // Selected navigation item
     var selectedNavItem by remember { mutableStateOf(0) } // 0 = Home
     
@@ -113,23 +111,28 @@ fun HomeScreen(
         }
     }
 
-    // DatePicker State
-    var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = uiState.selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    )
-
     if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = uiState.selectedDate
+                .atStartOfDay(java.time.ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+        )
+        
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
-                        viewModel.selectDate(selectedDate)
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val selectedDate = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                            viewModel.selectDate(selectedDate)
+                        }
+                        showDatePicker = false
                     }
-                    showDatePicker = false
-                }) {
+                ) {
                     Text("OK")
                 }
             },
@@ -161,8 +164,8 @@ fun HomeScreen(
                         )
                         // Hét napja
                         Text(
-                            text = uiState.selectedDate.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("hu"))
-                                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.forLanguageTag("hu")) else it.toString() },
+                            text = uiState.selectedDate.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+                                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ENGLISH) else it.toString() },
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
@@ -170,9 +173,7 @@ fun HomeScreen(
                 },
                 navigationIcon = {
                     // Előző nap
-                    IconButton(onClick = { 
-                        viewModel.goToPreviousDay()
-                    }) {
+                    IconButton(onClick = { viewModel.goToPreviousDay() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Previous day",
@@ -182,25 +183,21 @@ fun HomeScreen(
                 },
                 actions = {
                     // Ma gomb
-                    TextButton(onClick = { 
-                        viewModel.goToToday()
-                    }) {
+                    TextButton(onClick = { viewModel.goToToday() }) {
                         Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.today_caps), color = TextPrimary)
                     }
 
-                    // Calendar Icon
+                    // Naptár gomb
                     IconButton(onClick = { showDatePicker = true }) {
                         Icon(
                             imageVector = Icons.Default.DateRange,
-                            contentDescription = "Select Date",
+                            contentDescription = "Select date",
                             tint = TextPrimary
                         )
                     }
 
                     // Következő nap
-                    IconButton(onClick = { 
-                        viewModel.goToNextDay()
-                    }) {
+                    IconButton(onClick = { viewModel.goToNextDay() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                             contentDescription = "Next day",

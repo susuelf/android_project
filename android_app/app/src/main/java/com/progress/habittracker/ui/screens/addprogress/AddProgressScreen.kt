@@ -94,12 +94,12 @@ fun AddProgressScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Progress", color = TextPrimary) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.add_progress_title), color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = "Back",
+                            contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.back),
                             tint = TextPrimary
                         )
                     }
@@ -123,7 +123,7 @@ fun AddProgressScreen(
         ) {
             // Info header
             Text(
-                text = "Update your progress",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.update_progress_header),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -131,7 +131,7 @@ fun AddProgressScreen(
             )
             
             Text(
-                text = "Log the time you spent on this activity. Progress represents actual completed work.",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.update_progress_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
                 fontSize = 14.sp,
@@ -176,7 +176,7 @@ fun AddProgressScreen(
                     )
                 } else {
                     Text(
-                        "Save Progress",
+                        androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.save_progress_button),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -214,7 +214,7 @@ private fun LoggedTimeCard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Time Spent *",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.time_spent_label),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -229,21 +229,21 @@ private fun LoggedTimeCard(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Minutes (required)", color = TextTertiary) },
-                placeholder = { Text("e.g., 30", color = TextTertiary.copy(alpha = 0.5f)) },
+                label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.minutes_required_label), color = TextTertiary) },
+                placeholder = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.minutes_placeholder), color = TextTertiary.copy(alpha = 0.5f)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 isError = isError,
                 supportingText = {
                     when {
                         loggedTime.isEmpty() ->
-                            Text("Time spent is required", color = MaterialTheme.colorScheme.error)
+                            Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.time_spent_required_error), color = MaterialTheme.colorScheme.error)
                         timeValue != null && timeValue <= 0 -> 
-                            Text("Enter a positive number", color = MaterialTheme.colorScheme.error)
+                            Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.positive_number_error), color = MaterialTheme.colorScheme.error)
                         timeValue != null && timeValue > maxDuration -> 
-                            Text("Cannot exceed remaining time ($maxDuration min)", color = MaterialTheme.colorScheme.error)
+                            Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.max_time_exceeded_error, maxDuration), color = MaterialTheme.colorScheme.error)
                         else -> 
-                            Text("Max $maxDuration min (remaining time)", color = TextTertiary, fontSize = 11.sp)
+                            Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.max_time_hint, maxDuration), color = TextTertiary, fontSize = 11.sp)
                     }
                 },
                 colors = OutlinedTextFieldDefaults.colors(
@@ -291,7 +291,7 @@ private fun NotesCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Notes",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.notes_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary,
@@ -322,7 +322,7 @@ private fun NotesCard(
                     .height(140.dp),
                 placeholder = { 
                     Text(
-                        "Add notes about your progress... (optional)",
+                        androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.notes_optional_placeholder),
                         color = TextTertiary.copy(alpha = 0.5f)
                     ) 
                 },

@@ -7,12 +7,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-// Import-ok a PlaceholderScreen-hez
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.ui.unit.dp
 // Auth Screen import-ok
 import com.progress.habittracker.ui.screens.auth.SplashScreen
 import com.progress.habittracker.ui.screens.auth.LoginScreen
@@ -83,22 +77,6 @@ fun NavGraph(
          */
         composable(route = Screen.Register.route) {
             RegisterScreen(navController = navController)
-        }
-        
-        /**
-         * Reset Password Screen
-         * - Jelszó visszaállítás email alapján
-         * - Navigáció: vissza Login-ra
-         */
-        composable(route = Screen.ResetPassword.route) {
-            // TODO: ResetPasswordScreen() composable hívása
-            // ResetPasswordScreen(
-            //     onNavigateBack = { navController.popBackStack() }
-            // )
-            PlaceholderScreen(
-                screenName = "Reset Password Screen",
-                onNavigate = { navController.popBackStack() }
-            )
         }
         
         // ==================== MAIN SCREENS ====================
@@ -229,36 +207,4 @@ fun NavGraph(
     }
 }
 
-/**
- * PlaceholderScreen - Ideiglenes placeholder screen
- * 
- * Ezt használjuk amíg az igazi screen composable-ök nincsenek kész.
- * Később töröljük és helyettesítjük az igazi screen-ekkel.
- * 
- * @param screenName A screen neve
- * @param onNavigate Navigációs akció
- */
-@Composable
-private fun PlaceholderScreen(
-    screenName: String,
-    onNavigate: () -> Unit
-) {
-    // TODO: Ezt később törölni kell és helyettesíteni az igazi screen-ekkel
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = screenName,
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Button(onClick = onNavigate) {
-                Text("Navigate")
-            }
-        }
-    }
-}
+

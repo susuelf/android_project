@@ -92,12 +92,12 @@ fun EditScheduleScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Schedule", color = TextPrimary) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.edit_schedule_title), color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = "Back",
+                            contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.back),
                             tint = TextPrimary
                         )
                     }
@@ -192,7 +192,7 @@ fun EditScheduleScreen(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Save Changes", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.save_changes), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
                 
@@ -263,7 +263,7 @@ private fun TimeCard(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Schedule Time",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.schedule_time),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -273,7 +273,7 @@ private fun TimeCard(
             // Start Time (szerkeszthető)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Start Time",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.start_time),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                     fontSize = 14.sp
@@ -324,14 +324,14 @@ private fun TimeCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "End Time",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.end_time),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary,
                         fontSize = 14.sp
                     )
                     
                     Text(
-                        text = "(Auto-calculated)",
+                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.auto_calculated),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextTertiary,
                         fontSize = 11.sp,
@@ -398,7 +398,7 @@ private fun DurationCard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Duration",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.duration),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -418,18 +418,18 @@ private fun DurationCard(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Minutes", color = TextTertiary) },
+                label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.minutes), color = TextTertiary) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 isError = isError,
                 supportingText = {
                     when {
                         durationValue == null || durationValue <= 0 -> 
-                            Text("Enter a valid number (greater than 0)", color = MaterialTheme.colorScheme.error)
+                            Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.duration_error_invalid), color = MaterialTheme.colorScheme.error)
                         durationValue > maxDuration -> 
-                            Text("Maximum duration is $maxDuration minutes (8 hours)", color = MaterialTheme.colorScheme.error)
+                            Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.duration_error_max, maxDuration, maxDuration/60), color = MaterialTheme.colorScheme.error)
                         else -> 
-                            Text("Max $maxDuration min (${maxDuration/60}h)", color = TextTertiary, fontSize = 11.sp)
+                            Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.duration_hint, maxDuration, maxDuration/60), color = TextTertiary, fontSize = 11.sp)
                     }
                 },
                 colors = OutlinedTextFieldDefaults.colors(
@@ -470,7 +470,7 @@ private fun StatusCard(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Status",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.status),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -486,7 +486,7 @@ private fun StatusCard(
                     onClick = { onStatusChange(ScheduleStatus.Planned) },
                     label = { 
                         Text(
-                            "Planned",
+                            androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.status_planned),
                             fontSize = 14.sp,
                             fontWeight = if (status == ScheduleStatus.Planned) FontWeight.SemiBold else FontWeight.Normal
                         ) 
@@ -512,7 +512,7 @@ private fun StatusCard(
                     onClick = { onStatusChange(ScheduleStatus.Completed) },
                     label = { 
                         Text(
-                            "Completed",
+                            androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.status_completed),
                             fontSize = 14.sp,
                             fontWeight = if (status == ScheduleStatus.Completed) FontWeight.SemiBold else FontWeight.Normal
                         ) 
@@ -538,7 +538,7 @@ private fun StatusCard(
                     onClick = { onStatusChange(ScheduleStatus.Skipped) },
                     label = { 
                         Text(
-                            "Skipped",
+                            androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.status_skipped),
                             fontSize = 14.sp,
                             fontWeight = if (status == ScheduleStatus.Skipped) FontWeight.SemiBold else FontWeight.Normal
                         ) 
@@ -591,7 +591,7 @@ private fun NotesCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Notes",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.notes),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary,
@@ -620,7 +620,7 @@ private fun NotesCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(140.dp),
-                placeholder = { Text("Add notes here... (optional)", color = TextTertiary) },
+                placeholder = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.notes_placeholder), color = TextTertiary) },
                 maxLines = 6,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = DarkBackground,
@@ -658,7 +658,7 @@ private fun ParticipantsCard(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Partners",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.partners),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -667,7 +667,7 @@ private fun ParticipantsCard(
             
             if (participants.isEmpty()) {
                 Text(
-                    text = "No partners added yet",
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.no_partners),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextTertiary,
                     fontSize = 14.sp
@@ -730,7 +730,7 @@ private fun ParticipantsCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Remove partner",
+                                    contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.remove_partner),
                                     tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -742,7 +742,7 @@ private fun ParticipantsCard(
             
             // Note: Add partner functionality jelenleg nincs implementálva a backend-ben
             Text(
-                text = "Note: Partners can be added when creating the schedule",
+                text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.partners_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = TextTertiary,
                 fontSize = 11.sp,

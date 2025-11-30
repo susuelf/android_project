@@ -5,8 +5,10 @@ import com.progress.habittracker.data.model.*
 import com.progress.habittracker.data.remote.RetrofitClient
 import com.progress.habittracker.util.Resource
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
 
 /**
  * Schedule Repository
@@ -24,65 +26,72 @@ class ScheduleRepository(
      * Schedule API service instance
      */
     private val scheduleApi = RetrofitClient.scheduleApiService
+
+    // Trigger a frissítéshez (mivel nincs DAO/Room, ezzel szimuláljuk a reaktív adatfolyamot)
+    private val _refreshTrigger = MutableSharedFlow<Unit>(replay = 1)
+
+    /**
+     * Frissítés kérése
+     */
+    suspend fun refresh() {
+        _refreshTrigger.emit(Unit)
+    }
     
     /**
      * Schedule-ok lekérése egy adott napra
      * 
      * Flow-based API használatával reaktív adatkezelés.
+     * A Flow automatikusan frissül, ha a refresh() metódust meghívják.
      * 
      * @param date Dátum YYYY-MM-DD formátumban, null = mai nap
      * @return Flow<Resource<List<ScheduleResponseDto>>> - Schedule-ok listája Resource wrapper-ben
-     * 
-     * Resource állapotok:
-     * - Loading: Betöltés folyamatban
-     * - Success: Sikeres lekérés, schedule lista
-     * - Error: Hiba történt (hibaüzenet)
      */
     fun getSchedulesByDay(date: String? = null): Flow<Resource<List<ScheduleResponseDto>>> = flow {
-        try {
-            // 1. Emit Loading state
-            emit(Resource.Loading())
-            
-            // 2. Token lekérése
-            val token = tokenManager.accessToken.first()
-            
-            if (token.isNullOrEmpty()) {
-                // Nincs token - felhasználó nincs bejelentkezve
-                emit(Resource.Error("Nincs bejelentkezve. Kérlek jelentkezz be!"))
-                return@flow
-            }
-            
-            // 3. API hívás
-            val response = scheduleApi.getSchedulesByDay(
-                date = date,
-                authorization = "Bearer $token"
-            )
-            
-            // 4. Response feldolgozás
-            if (response.isSuccessful) {
-                val schedules = response.body() ?: emptyList()
+        // Token lekérése egyszer
+        val token = tokenManager.accessToken.first()
+        
+        if (token.isNullOrEmpty()) {
+            emit(Resource.Error("Nincs bejelentkezve. Kérlek jelentkezz be!"))
+            return@flow
+        }
+
+        // Trigger figyelése és API hívás végrehajtása minden triggerre
+        // A flow { ... } blokkban a collect felfüggeszti a futást, így "élő" marad a flow
+        val triggerFlow = flow {
+            emit(Unit) // Azonnali első futtatás
+            _refreshTrigger.collect { emit(Unit) } // Későbbi frissítések
+        }
+
+        triggerFlow.collect {
+            try {
+                // Loading state minden frissítésnél (opcionális, de jó visszajelzés)
+                // emit(Resource.Loading()) 
+                // Ha túl sok a villogás, ezt ki lehet venni, vagy csak az elsőnél hagyni
+
+                val response = scheduleApi.getSchedulesByDay(
+                    date = date,
+                    authorization = "Bearer $token"
+                )
                 
-                // Rendezés start_time szerint (időrendi sorrend)
-                val sortedSchedules = schedules.sortedBy { it.startTime }
-                
-                emit(Resource.Success(sortedSchedules))
-            } else {
-                // HTTP hiba
-                when (response.code()) {
-                    401 -> emit(Resource.Error("Lejárt a munkamenet. Kérlek jelentkezz be újra!"))
-                    400 -> emit(Resource.Error("Hibás dátum formátum"))
-                    404 -> emit(Resource.Error("A kért schedule-ok nem találhatók"))
-                    500 -> emit(Resource.Error("Szerver hiba. Próbáld újra később!"))
-                    else -> emit(Resource.Error("Hiba történt: ${'$'}{response.message()}"))
+                if (response.isSuccessful) {
+                    val schedules = response.body() ?: emptyList()
+                    val sortedSchedules = schedules.sortedBy { it.startTime }
+                    emit(Resource.Success(sortedSchedules))
+                } else {
+                    when (response.code()) {
+                        401 -> emit(Resource.Error("Lejárt a munkamenet. Kérlek jelentkezz be újra!"))
+                        400 -> emit(Resource.Error("Hibás dátum formátum"))
+                        404 -> emit(Resource.Error("A kért schedule-ok nem találhatók"))
+                        500 -> emit(Resource.Error("Szerver hiba. Próbáld újra később!"))
+                        else -> emit(Resource.Error("Hiba történt: ${'$'}{response.message()}"))
+                    }
                 }
+            } catch (e: Exception) {
+                emit(Resource.Error(
+                    message = e.localizedMessage ?: "Ismeretlen hiba történt",
+                    data = null
+                ))
             }
-            
-        } catch (e: Exception) {
-            // Hálózati hiba vagy más exception
-            emit(Resource.Error(
-                message = e.localizedMessage ?: "Ismeretlen hiba történt",
-                data = null
-            ))
         }
     }
     
@@ -129,6 +138,40 @@ class ScheduleRepository(
         }
     }
     
+    /**
+     * Schedule-ok lekérése habit ID alapján
+     * 
+     * @param habitId Habit egyedi azonosítója
+     * @return Flow<Resource<List<ScheduleResponseDto>>>
+     */
+    fun getSchedulesByHabitId(habitId: Int): Flow<Resource<List<ScheduleResponseDto>>> = flow {
+        try {
+            emit(Resource.Loading())
+            
+            val token = tokenManager.accessToken.first()
+            
+            if (token.isNullOrEmpty()) {
+                emit(Resource.Error("Nincs bejelentkezve"))
+                return@flow
+            }
+            
+            val response = scheduleApi.getSchedulesByHabitId(
+                habitId = habitId,
+                authorization = "Bearer $token"
+            )
+            
+            if (response.isSuccessful) {
+                val schedules = response.body() ?: emptyList()
+                emit(Resource.Success(schedules))
+            } else {
+                emit(Resource.Error("Hiba a schedule-ok lekérésekor: ${'$'}{response.message()}"))
+            }
+            
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Ismeretlen hiba"))
+        }
+    }
+
     /**
      * Schedule státuszának frissítése
      * 
