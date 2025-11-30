@@ -11,8 +11,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,9 +46,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.*
-
-// Stabil kezdőpont a naptárhoz (2020.01.01)
-private val ANCHOR_DATE = LocalDate.of(2020, 1, 1)
 
 /**
  * Home Screen - Főképernyő (Design frissítve - "Today's plan" + Bottom Navigation)
@@ -89,42 +84,6 @@ fun HomeScreen(
 
     // UI State collect
     val uiState by viewModel.uiState.collectAsState()
-
-    // Pager Logic
-    val scope = rememberCoroutineScope()
-
-    // Segédfüggvények a dátum és oldal index konverzióhoz
-    fun getDateForPage(page: Int): LocalDate {
-        return ANCHOR_DATE.plusDays(page.toLong())
-    }
-
-    fun getPageForDate(date: LocalDate): Int {
-        return ChronoUnit.DAYS.between(ANCHOR_DATE, date).toInt()
-    }
-
-    // Kezdő oldal kiszámítása a mai napra
-    val initialPage = remember { getPageForDate(LocalDate.now()) }
-
-    val pagerState = rememberPagerState(
-        initialPage = initialPage,
-        pageCount = { Int.MAX_VALUE }
-    )
-
-    // 1. Szinkronizáció: Pager változás -> ViewModel frissítés (Swipe esetén)
-    LaunchedEffect(pagerState.currentPage) {
-        val date = getDateForPage(pagerState.currentPage)
-        if (date != uiState.selectedDate) {
-            viewModel.selectDate(date)
-        }
-    }
-
-    // 2. Szinkronizáció: ViewModel változás -> Pager görgetés (Gombok/DatePicker esetén)
-    LaunchedEffect(uiState.selectedDate) {
-        val targetPage = getPageForDate(uiState.selectedDate)
-        if (pagerState.currentPage != targetPage) {
-            pagerState.animateScrollToPage(targetPage)
-        }
-    }
 
     // Dátum formázók
     val dayOfWeekFormatter = remember { DateTimeFormatter.ofPattern("EEEE", Locale.ENGLISH) }
@@ -167,7 +126,6 @@ fun HomeScreen(
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
                         val selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
-                        // Csak a ViewModel-t frissítjük, a Pager követni fogja a LaunchedEffect miatt
                         viewModel.selectDate(selectedDate)
                     }
                     showDatePicker = false
@@ -213,7 +171,6 @@ fun HomeScreen(
                 navigationIcon = {
                     // Előző nap
                     IconButton(onClick = { 
-                        // Csak a ViewModel-t hívjuk, a Pager követni fogja
                         viewModel.goToPreviousDay()
                     }) {
                         Icon(
@@ -226,7 +183,6 @@ fun HomeScreen(
                 actions = {
                     // Ma gomb
                     TextButton(onClick = { 
-                        // Csak a ViewModel-t hívjuk, a Pager követni fogja
                         viewModel.goToToday()
                     }) {
                         Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.today_caps), color = TextPrimary)
@@ -243,7 +199,6 @@ fun HomeScreen(
 
                     // Következő nap
                     IconButton(onClick = { 
-                        // Csak a ViewModel-t hívjuk, a Pager követni fogja
                         viewModel.goToNextDay()
                     }) {
                         Icon(
@@ -328,85 +283,68 @@ fun HomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = DarkBackground
     ) { paddingValues ->
-        HorizontalPager(
-            state = pagerState,
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        ) { page ->
-            val pageDate = getDateForPage(page)
+        ) {
+            // "Today's plan" Header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.todays_plan),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    fontSize = 24.sp
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Text(
+                    text = "${uiState.selectedDate.format(dayOfWeekFormatter)}, ${uiState.selectedDate.format(dateFormatter)}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextSecondary,
+                    fontSize = 16.sp
+                )
+            }
             
-            if (pageDate == uiState.selectedDate) {
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    // "Today's plan" Header
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 16.dp)
-                    ) {
-                        Text(
-                            text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.todays_plan),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary,
-                            fontSize = 24.sp
-                        )
-                        
-                        Spacer(modifier = Modifier.height(4.dp))
-                        
-                        Text(
-                            text = "${uiState.selectedDate.format(dayOfWeekFormatter)}, ${uiState.selectedDate.format(dateFormatter)}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = TextSecondary,
-                            fontSize = 16.sp
+            // Tartalom
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            ) {
+                when {
+                    // Loading állapot
+                    uiState.isLoading && uiState.schedules.isEmpty() -> {
+                        LoadingState()
+                    }
+
+                    // Üres állapot - nincs schedule
+                    !uiState.isLoading && uiState.schedules.isEmpty() -> {
+                        EmptyState(
+                            onCreateSchedule = { navController.navigate(Screen.CreateSchedule.route) }
                         )
                     }
-                    
-                    // Tartalom
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .weight(1f)
-                    ) {
-                        when {
-                            // Loading állapot
-                            uiState.isLoading && uiState.schedules.isEmpty() -> {
-                                LoadingState()
-                            }
 
-                            // Üres állapot - nincs schedule
-                            !uiState.isLoading && uiState.schedules.isEmpty() -> {
-                                EmptyState(
-                                    onCreateSchedule = { navController.navigate(Screen.CreateSchedule.route) }
-                                )
+                    // Schedules megjelenítése időszakok szerint csoportosítva
+                    else -> {
+                        ScheduleListGroupedByTimeOfDay(
+                            schedules = uiState.schedules,
+                            isRefreshing = uiState.isRefreshing,
+                            onRefresh = { viewModel.refreshSchedules() },
+                            onScheduleClick = { scheduleId ->
+                                navController.navigate(Screen.ScheduleDetails.createRoute(scheduleId))
+                            },
+                            onStatusToggle = { scheduleId, currentStatus ->
+                                viewModel.toggleScheduleStatus(scheduleId, currentStatus)
                             }
-
-                            // Schedules megjelenítése időszakok szerint csoportosítva
-                            else -> {
-                                ScheduleListGroupedByTimeOfDay(
-                                    schedules = uiState.schedules,
-                                    isRefreshing = uiState.isRefreshing,
-                                    onRefresh = { viewModel.refreshSchedules() },
-                                    onScheduleClick = { scheduleId ->
-                                        navController.navigate(Screen.ScheduleDetails.createRoute(scheduleId))
-                                    },
-                                    onStatusToggle = { scheduleId, currentStatus ->
-                                        viewModel.toggleScheduleStatus(scheduleId, currentStatus)
-                                    }
-                                )
-                            }
-                        }
+                        )
                     }
-                }
-            } else {
-                // Loading placeholder for off-screen pages
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
                 }
             }
         }
