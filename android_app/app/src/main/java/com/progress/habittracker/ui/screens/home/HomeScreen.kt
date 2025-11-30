@@ -49,7 +49,8 @@ import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-private const val START_PAGE = Int.MAX_VALUE / 2
+// Stabil kezdőpont a naptárhoz (2020.01.01)
+private val ANCHOR_DATE = LocalDate.of(2020, 1, 1)
 
 /**
  * Home Screen - Főképernyő (Design frissítve - "Today's plan" + Bottom Navigation)
@@ -90,31 +91,34 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     // Pager Logic
-    val anchorDate = remember { LocalDate.now() }
     val scope = rememberCoroutineScope()
 
+    // Segédfüggvények a dátum és oldal index konverzióhoz
     fun getDateForPage(page: Int): LocalDate {
-        val daysDiff = page - START_PAGE
-        return anchorDate.plusDays(daysDiff.toLong())
+        return ANCHOR_DATE.plusDays(page.toLong())
     }
 
     fun getPageForDate(date: LocalDate): Int {
-        val daysDiff = ChronoUnit.DAYS.between(anchorDate, date).toInt()
-        return START_PAGE + daysDiff
+        return ChronoUnit.DAYS.between(ANCHOR_DATE, date).toInt()
     }
 
+    // Kezdő oldal kiszámítása a mai napra
+    val initialPage = remember { getPageForDate(LocalDate.now()) }
+
     val pagerState = rememberPagerState(
-        initialPage = START_PAGE,
+        initialPage = initialPage,
         pageCount = { Int.MAX_VALUE }
     )
 
+    // 1. Szinkronizáció: Pager változás -> ViewModel frissítés (Swipe esetén)
     LaunchedEffect(pagerState.currentPage) {
         val date = getDateForPage(pagerState.currentPage)
         if (date != uiState.selectedDate) {
-            viewModel.loadSchedules(date)
+            viewModel.selectDate(date)
         }
     }
 
+    // 2. Szinkronizáció: ViewModel változás -> Pager görgetés (Gombok/DatePicker esetén)
     LaunchedEffect(uiState.selectedDate) {
         val targetPage = getPageForDate(uiState.selectedDate)
         if (pagerState.currentPage != targetPage) {
@@ -163,9 +167,8 @@ fun HomeScreen(
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
                         val selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
-                        scope.launch {
-                            pagerState.animateScrollToPage(getPageForDate(selectedDate))
-                        }
+                        // Csak a ViewModel-t frissítjük, a Pager követni fogja a LaunchedEffect miatt
+                        viewModel.selectDate(selectedDate)
                     }
                     showDatePicker = false
                 }) {
@@ -210,7 +213,8 @@ fun HomeScreen(
                 navigationIcon = {
                     // Előző nap
                     IconButton(onClick = { 
-                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                        // Csak a ViewModel-t hívjuk, a Pager követni fogja
+                        viewModel.goToPreviousDay()
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -222,7 +226,8 @@ fun HomeScreen(
                 actions = {
                     // Ma gomb
                     TextButton(onClick = { 
-                        scope.launch { pagerState.animateScrollToPage(getPageForDate(LocalDate.now())) }
+                        // Csak a ViewModel-t hívjuk, a Pager követni fogja
+                        viewModel.goToToday()
                     }) {
                         Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.today_caps), color = TextPrimary)
                     }
@@ -238,7 +243,8 @@ fun HomeScreen(
 
                     // Következő nap
                     IconButton(onClick = { 
-                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                        // Csak a ViewModel-t hívjuk, a Pager követni fogja
+                        viewModel.goToNextDay()
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
