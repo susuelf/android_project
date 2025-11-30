@@ -247,6 +247,28 @@ export class ScheduleService {
     return schedules.map((s) => this.mapToResponseDto(s, s.habit, userId));
   }
 
+  async findByHabit(userId: number, habitId: number): Promise<ScheduleResponseDto[]> {
+    const schedules = await this.scheduleRepo
+      .createQueryBuilder('schedule')
+      .leftJoinAndSelect('schedule.habit', 'habit')
+      .leftJoinAndSelect('habit.category', 'habitCategory')
+      .leftJoinAndSelect('schedule.participants', 'participants')
+      .leftJoinAndSelect('participants.profile', 'participantProfile')
+      .leftJoinAndSelect('schedule.progress', 'progress')
+      .where('schedule.habitId = :habitId', { habitId })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('schedule.userId = :userId', { userId }).orWhere(
+            'participants.id = :userId',
+            { userId },
+          );
+        }),
+      )
+      .getMany();
+
+    return schedules.map((s) => this.mapToResponseDto(s, s.habit, userId));
+  }
+
   async findOne(id: number, userId: number): Promise<ScheduleResponseDto> {
     const schedule = await this.scheduleRepo
       .createQueryBuilder('schedule')
@@ -484,6 +506,7 @@ export class ScheduleService {
 
     return {
       id: schedule.id,
+      habitId: habit.id,
       start_time: schedule.start_time,
       end_time: schedule.end_time,
       status: schedule.status,

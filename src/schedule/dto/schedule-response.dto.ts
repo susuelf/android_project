@@ -9,6 +9,9 @@ export class ScheduleResponseDto {
   id: number;
 
   @ApiProperty()
+  habitId: number;
+
+  @ApiProperty()
   start_time: Date;
 
   @ApiProperty({ required: false })

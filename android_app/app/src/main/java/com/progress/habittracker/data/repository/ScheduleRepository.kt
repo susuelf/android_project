@@ -4,11 +4,22 @@ import com.progress.habittracker.data.local.TokenManager
 import com.progress.habittracker.data.model.*
 import com.progress.habittracker.data.remote.RetrofitClient
 import com.progress.habittracker.util.Resource
+import com.progress.habittracker.util.ScheduleStateCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+/**
+ * Helper class for weekly stats
+ */
+data class HabitStat(
+    val habitId: Int,
+    val averageProgress: Float
+)
 
 /**
  * Schedule Repository
@@ -390,6 +401,88 @@ class ScheduleRepository(
             
         } catch (e: Exception) {
             emit(Resource.Error(e.localizedMessage ?: "Ismeretlen hiba"))
+        }
+    }
+
+    /**
+     * Heti statisztikák lekérése
+     * 
+     * Lekéri a megadott habit-ekhez tartozó schedule-okat, szűri őket a megadott dátumtartományra,
+     * és kiszámolja az átlagos teljesítettséget.
+     * 
+     * @param habitIds Habit ID-k listája
+     * @param startOfWeek Hét kezdő napja (Hétfő)
+     * @param endOfWeek Hét utolsó napja (Vasárnap)
+     * @return Flow<List<HabitStat>>
+     */
+    fun getWeeklyStats(
+        habitIds: List<Int>,
+        startOfWeek: LocalDate,
+        endOfWeek: LocalDate
+    ): Flow<List<HabitStat>> = flow {
+        val token = tokenManager.accessToken.first()
+        if (token.isNullOrEmpty()) {
+            emit(emptyList())
+            return@flow
+        }
+
+        // Trigger figyelése
+        val triggerFlow = flow {
+            emit(Unit) // Azonnali első futtatás
+            _refreshTrigger.collect { emit(Unit) }
+        }
+
+        triggerFlow.collect {
+            val stats = mutableListOf<HabitStat>()
+            val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+            // Mivel nincs batch endpoint, minden habit-re külön lekérjük (ez nem optimális, de az API ezt engedi)
+            // Párhuzamosítás nélkül, egyszerűen
+            for (habitId in habitIds) {
+                try {
+                    val response = scheduleApi.getSchedulesByHabitId(
+                        habitId = habitId,
+                        authorization = "Bearer $token"
+                    )
+
+                    if (response.isSuccessful) {
+                        val allSchedules = response.body() ?: emptyList()
+                        
+                        // Szűrés dátumra
+                        val weeklySchedules = allSchedules.filter { schedule ->
+                            try {
+                                // A backend dátum formátuma: YYYY-MM-DDT... vagy YYYY-MM-DD
+                                // Feltételezzük, hogy a date mező string, parse-oljuk
+                                val scheduleDate = LocalDate.parse(schedule.date.take(10), dateFormatter)
+                                !scheduleDate.isBefore(startOfWeek) && !scheduleDate.isAfter(endOfWeek)
+                            } catch (e: Exception) {
+                                false
+                            }
+                        }
+
+                        if (weeklySchedules.isNotEmpty()) {
+                            val totalScore = weeklySchedules.sumOf { schedule ->
+                                val uiState = ScheduleStateCalculator.calculate(schedule)
+                                // Ha Completed, akkor 1.0, egyébként a százalék
+                                if (schedule.status == ScheduleStatus.Completed) {
+                                    1.0
+                                } else {
+                                    (uiState.progressPercentage.toDouble() / 100.0)
+                                }
+                            }
+                            val average = totalScore / weeklySchedules.size.toDouble()
+                            stats.add(HabitStat(habitId, average.toFloat()))
+                        } else {
+                            // Ha nincs schedule a héten, akkor nem adjuk hozzá (vagy 0-val)
+                            // A specifikáció szerint: "Ha NEM szerepel (mert ezen a héten nem volt beütemezve), akkor a progress legyen 0."
+                            // Itt most nem adjuk hozzá, a ViewModel majd kezeli a hiányzókat 0-ként
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Hiba esetén skip
+                }
+            }
+            emit(stats)
         }
     }
 }

@@ -8,7 +8,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +31,9 @@ import com.progress.habittracker.data.local.TokenManager
 import com.progress.habittracker.data.model.HabitResponseDto
 import com.progress.habittracker.data.repository.ProfileRepository
 import com.progress.habittracker.navigation.Screen
+import com.progress.habittracker.ui.theme.DarkSurface
+import com.progress.habittracker.ui.theme.SuccessCyan
+import com.progress.habittracker.ui.theme.TextTertiary
 import com.progress.habittracker.ui.viewmodel.ProfileViewModel
 import com.progress.habittracker.ui.viewmodel.ProfileViewModelFactory
 
@@ -87,18 +95,17 @@ fun ProfileScreen(
         )
     }
 
+    // Frissítés amikor visszajövünk Add Habit-ből vagy más képernyőről
+    val navBackStackEntry = navController.currentBackStackEntry
+    LaunchedEffect(navBackStackEntry) {
+        // Ha visszatérünk, frissítjük a profilt és a habit-eket
+        viewModel.loadProfile()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.profile_title)) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.back)
-                        )
-                    }
-                },
                 actions = {
                     IconButton(onClick = { showLogoutDialog = true }) {
                         Icon(
@@ -108,6 +115,59 @@ fun ProfileScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            // Bottom Navigation Bar
+            NavigationBar(
+                containerColor = DarkSurface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ) {
+                // Home
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Outlined.Home,
+                            contentDescription = "Home"
+                        )
+                    },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.home_title)) },
+                    selected = false,
+                    onClick = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = SuccessCyan,
+                        selectedTextColor = SuccessCyan,
+                        indicatorColor = DarkSurface,
+                        unselectedIconColor = TextTertiary,
+                        unselectedTextColor = TextTertiary
+                    )
+                )
+
+                // Profile
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Filled.Person,
+                            contentDescription = "Profile"
+                        )
+                    },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.profile_title)) },
+                    selected = true,
+                    onClick = {
+                        // Már a Profile screen-en vagyunk
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = SuccessCyan,
+                        selectedTextColor = SuccessCyan,
+                        indicatorColor = DarkSurface,
+                        unselectedIconColor = TextTertiary,
+                        unselectedTextColor = TextTertiary
+                    )
+                )
+            }
         }
     ) { paddingValues ->
         Box(
@@ -145,7 +205,8 @@ fun ProfileScreen(
                         habits = uiState.habits,
                         habitStats = uiState.habitStats,
                         isLoadingHabits = uiState.isLoadingHabits,
-                        onEditProfile = { navController.navigate(Screen.EditProfile.route) }
+                        onEditProfile = { navController.navigate(Screen.EditProfile.route) },
+                        onAddHabit = { navController.navigate(Screen.AddHabit.route) }
                     )
                 }
             }
@@ -162,7 +223,8 @@ private fun ProfileContent(
     habits: List<HabitResponseDto>,
     habitStats: Map<Int, Float>,
     isLoadingHabits: Boolean,
-    onEditProfile: () -> Unit
+    onEditProfile: () -> Unit,
+    onAddHabit: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -181,17 +243,38 @@ private fun ProfileContent(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Profil kép
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(profile.profileImageUrl ?: "https://via.placeholder.com/150")
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.profile_picture_content_desc),
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
+                    Surface(
+                        modifier = Modifier.size(140.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        border = androidx.compose.foundation.BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
+                    ) {
+                        if (!profile.profileImageUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(profile.profileImageUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.profile_picture_content_desc),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -278,6 +361,22 @@ private fun ProfileContent(
                 )
             }
         }
+
+        // Create New Habit Button
+        item {
+            Button(
+                onClick = onAddHabit,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.add_new_habit_title))
+            }
+        }
     }
 }
 
@@ -343,7 +442,7 @@ private fun HabitItem(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = androidx.compose.ui.res.stringResource(com.progress.habittracker.R.string.habit_consistency),
+                        text = "Daily Progress",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

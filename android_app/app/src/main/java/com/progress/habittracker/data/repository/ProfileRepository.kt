@@ -7,8 +7,11 @@ import com.progress.habittracker.data.model.UpdateProfileRequest
 import com.progress.habittracker.data.remote.RetrofitClient
 import com.progress.habittracker.util.Resource
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onStart
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -35,6 +38,16 @@ class ProfileRepository(
      * Habit API service instance (user habits lekéréséhez)
      */
     private val habitApi = RetrofitClient.habitApiService
+
+    // Trigger a frissítéshez
+    private val _refreshTrigger = MutableSharedFlow<Unit>(replay = 1)
+
+    /**
+     * Frissítés kérése
+     */
+    suspend fun refresh() {
+        _refreshTrigger.emit(Unit)
+    }
     
     /**
      * Saját profil lekérése
@@ -168,34 +181,41 @@ class ProfileRepository(
      * @return Flow<Resource<List<HabitResponseDto>>> - User habit-jei
      */
     fun getUserHabits(userId: Int): Flow<Resource<List<HabitResponseDto>>> = flow {
-        try {
-            emit(Resource.Loading())
-            
-            val token = tokenManager.accessToken.first()
-            
-            if (token.isNullOrEmpty()) {
-                emit(Resource.Error("Nincs bejelentkezve"))
-                return@flow
-            }
-            
-            val response = habitApi.getHabitsByUserId(
-                userId = userId,
-                authorization = "Bearer $token"
-            )
-            
-            if (response.isSuccessful) {
-                val habits = response.body() ?: emptyList()
-                emit(Resource.Success(habits))
-            } else {
-                when (response.code()) {
-                    401 -> emit(Resource.Error("Lejárt a munkamenet"))
-                    404 -> emit(Resource.Error("Felhasználó nem található"))
-                    else -> emit(Resource.Error("Hiba: ${response.message()}"))
+        val token = tokenManager.accessToken.first()
+        
+        if (token.isNullOrEmpty()) {
+            emit(Resource.Error("Nincs bejelentkezve"))
+            return@flow
+        }
+
+        // Trigger figyelése
+        val triggerFlow = flow {
+            emit(Unit) // Azonnali első futtatás
+            _refreshTrigger.collect { emit(Unit) }
+        }
+
+        triggerFlow.collect {
+            try {
+                // emit(Resource.Loading()) // Opcionális, ha nem akarunk villogást
+
+                val response = habitApi.getHabitsByUserId(
+                    userId = userId,
+                    authorization = "Bearer $token"
+                )
+                
+                if (response.isSuccessful) {
+                    val habits = response.body() ?: emptyList()
+                    emit(Resource.Success(habits))
+                } else {
+                    when (response.code()) {
+                        401 -> emit(Resource.Error("Lejárt a munkamenet"))
+                        404 -> emit(Resource.Error("Felhasználó nem található"))
+                        else -> emit(Resource.Error("Hiba: ${response.message()}"))
+                    }
                 }
+            } catch (e: Exception) {
+                emit(Resource.Error(e.localizedMessage ?: "Ismeretlen hiba"))
             }
-            
-        } catch (e: Exception) {
-            emit(Resource.Error(e.localizedMessage ?: "Ismeretlen hiba"))
         }
     }
     

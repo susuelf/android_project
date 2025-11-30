@@ -9,14 +9,16 @@ import com.progress.habittracker.data.model.ProfileResponseDto
 import com.progress.habittracker.data.repository.ProfileRepository
 import com.progress.habittracker.data.repository.ScheduleRepository
 import com.progress.habittracker.util.Resource
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAdjusters
 
 /**
  * Profile ViewModel
@@ -26,7 +28,7 @@ import kotlinx.coroutines.launch
  * Funkciók:
  * - Profil betöltése
  * - Habit-ek betöltése
- * - Habit statisztikák számítása
+ * - Heti statisztikák számítása
  * - Kijelentkezés
  */
 class ProfileViewModel(
@@ -73,8 +75,8 @@ class ProfileViewModel(
                                     error = null
                                 )
                             }
-                            // Habit-ek betöltése
-                            loadUserHabits(profile.id)
+                            // Habit-ek betöltése és statisztikák indítása
+                            loadUserHabitsAndStats(profile.id)
                         }
                     }
                     is Resource.Error -> {
@@ -91,74 +93,76 @@ class ProfileViewModel(
     }
 
     /**
-     * Felhasználó habit-jeinek betöltése
+     * Felhasználó habit-jeinek és statisztikáinak betöltése
+     * Combine operátorral összefésülve
      */
-    private fun loadUserHabits(userId: Int) {
+    private fun loadUserHabitsAndStats(userId: Int) {
         viewModelScope.launch {
-            profileRepository.getUserHabits(userId).collect { resource ->
-                when (resource) {
-                    is Resource.Loading -> {
-                        _uiState.update { it.copy(isLoadingHabits = true) }
-                    }
-                    is Resource.Success -> {
-                        resource.data?.let { habits ->
-                            _uiState.update {
-                                it.copy(
-                                    isLoadingHabits = false,
-                                    habits = habits
-                                )
-                            }
-                            // Statisztikák számítása
-                            calculateHabitStats(habits)
-                        }
-                    }
-                    is Resource.Error -> {
-                        _uiState.update { it.copy(isLoadingHabits = false) }
-                    }
-                }
-            }
-        }
-    }
+            _uiState.update { it.copy(isLoadingHabits = true) }
 
-    /**
-     * Statisztikák számítása minden habit-hez
-     */
-    private fun calculateHabitStats(habits: List<HabitResponseDto>) {
-        viewModelScope.launch {
-            val stats = mutableMapOf<Int, Float>()
+            // 1. Mai dátum lekérése
+            val today = LocalDate.now()
+            val dateFormatter = DateTimeFormatter.ISO_DATE
+            val todayString = today.format(dateFormatter)
+
+            // 2. Flow-k definiálása
+            val habitsFlow = profileRepository.getUserHabits(userId)
+            val schedulesFlow = scheduleRepository.getSchedulesByDay(todayString)
             
-            // Párhuzamos lekérdezések
-            val deferredStats = habits.map { habit ->
-                async {
-                    try {
-                        val schedulesResource = scheduleRepository.getSchedulesByHabitId(habit.id).first()
-                        if (schedulesResource is Resource.Success) {
-                            val schedules = schedulesResource.data ?: emptyList()
-                            if (schedules.isNotEmpty()) {
-                                val totalPercentage = schedules.sumOf { schedule ->
-                                    // Idő alapú progress számítás a központosított kalkulátorral
-                                    val uiState = com.progress.habittracker.util.ScheduleStateCalculator.calculate(schedule)
-                                    (uiState.progressPercentage / 100.0)
-                                }
-                                val average = totalPercentage / schedules.size
-                                habit.id to average.toFloat()
-                            } else {
-                                habit.id to 0f
+            // 3. Combine operátor használata: Habits + Today's Schedules
+            combine(habitsFlow, schedulesFlow) { habitsResource, schedulesResource ->
+                var currentHabits = _uiState.value.habits
+                var currentStats = _uiState.value.habitStats
+                var isLoading = true
+                
+                // Hibakezelés (egyszerűsítve: ha bármelyik hiba, akkor hiba)
+                if (habitsResource is Resource.Error || schedulesResource is Resource.Error) {
+                    isLoading = false
+                    // Itt lehetne error message-t beállítani
+                }
+
+                // Ha mindkettő sikeres, számoljuk a statisztikát
+                if (habitsResource is Resource.Success && schedulesResource is Resource.Success) {
+                    val habits = habitsResource.data ?: emptyList()
+                    val schedules = schedulesResource.data ?: emptyList()
+                    
+                    currentHabits = habits
+                    
+                    // Statisztika számítása: Mai átlagos progress habit-enként
+                    currentStats = habits.associate { habit ->
+                        // Keressük a habit-hez tartozó mai schedule-öket
+                        // Fontos: schedule.habit.id-t használunk, mert a habitId mező nem biztosított
+                        val habitSchedules = schedules.filter { it.habit.id == habit.id }
+                        
+                        val progress = if (habitSchedules.isNotEmpty()) {
+                            // Összeadjuk a százalékokat
+                            val totalProgress = habitSchedules.sumOf { schedule ->
+                                com.progress.habittracker.util.ScheduleStateCalculator.calculate(schedule).progressPercentage.toDouble()
                             }
+                            // Átlagolunk
+                            val avgPercent = totalProgress / habitSchedules.size
+                            // 0.0 - 1.0 tartományba konvertáljuk a UI számára
+                            (avgPercent / 100.0).toFloat()
                         } else {
-                            habit.id to 0f
+                            0f // Ha nincs mára ütemezve, 0%
                         }
-                    } catch (e: Exception) {
-                        habit.id to 0f
+                        habit.id to progress
                     }
+                    isLoading = false
+                } else if (habitsResource is Resource.Loading || schedulesResource is Resource.Loading) {
+                    isLoading = true
+                }
+                
+                Triple(currentHabits, currentStats, isLoading)
+            }.collect { (habits, stats, isLoading) ->
+                _uiState.update { 
+                    it.copy(
+                        habits = habits,
+                        habitStats = stats,
+                        isLoadingHabits = isLoading
+                    ) 
                 }
             }
-            
-            deferredStats.awaitAll().forEach { (id, stat) ->
-                stats[id] = stat
-            }
-            
-            _uiState.update { it.copy(habitStats = stats) }
         }
     }
 

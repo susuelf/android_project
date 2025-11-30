@@ -91,6 +91,21 @@ export class ScheduleController {
     return this.scheduleService.findByDate(userId, parsedDate);
   }
 
+  @Get('habit/:habitId')
+  @ApiOperation({ summary: 'Get schedules by habit ID' })
+  @ApiParam({ name: 'habitId', type: Number })
+  @ApiResponse({
+    status: 200,
+    description: 'List of schedules for the habit',
+    type: [ScheduleResponseDto],
+  })
+  async findByHabit(
+    @Param('habitId', ParseIntPipe) habitId: number,
+    @GetCurrentUserId() userId: number,
+  ): Promise<ScheduleResponseDto[]> {
+    return this.scheduleService.findByHabit(userId, habitId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get schedule by ID' })
   @ApiParam({ name: 'id', type: Number })
